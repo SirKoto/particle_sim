@@ -12,3 +12,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_subdirectory(src)
 
 add_subdirectory(libs)
+
+
+set(COPY_DATA
+    
+)
+
+foreach(data ${COPY_DATA})
+    configure_file(${data} ${data} COPYONLY)
+endforeach()
