@@ -1,0 +1,10 @@
+
+#ifdef __cplusplus
+    #define VEC3 glm::vec3
+#else
+    #define VEC3 vec3
+#endif
+
+struct Particle {
+    VEC3 pos;
+};

@@ -1,5 +1,7 @@
 #version 430 core
 
+#include "../shader_includes/particle_types.in"
+
 layout(location = 0) in vec3 iPos;
 //layout(location = 1) in vec3 iNorm;
 //layout(location = 2) in vec2 iUv;

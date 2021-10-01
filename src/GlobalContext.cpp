@@ -6,6 +6,8 @@
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <particle_types.in>
+
 GlobalContext::GlobalContext() :
     m_ico_mesh((std::filesystem::path(PROJECT_DIR) / "resources/ply/icosahedron.ply").string().c_str())
 {
@@ -14,8 +16,8 @@ GlobalContext::GlobalContext() :
     const std::filesystem::path shad_dir = std::filesystem::path(PROJECT_DIR) / "resources/shaders";
 
     std::array<Shader, 2> particle_shaders = { 
-        Shader((shad_dir / "simpl.vert").string().c_str(), Shader::Type::Vertex ),
-        Shader((shad_dir / "simpl.frag").string().c_str(), Shader::Type::Fragment)
+        Shader((shad_dir / "simpl.vert"), Shader::Type::Vertex ),
+        Shader((shad_dir / "simpl.frag"), Shader::Type::Fragment)
     };
 
     m_particle_draw_program = ShaderProgram(particle_shaders.data(), (uint32_t)particle_shaders.size());

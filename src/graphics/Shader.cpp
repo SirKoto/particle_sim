@@ -8,12 +8,8 @@
 #include <glad/glad.h>
 
 
-Shader::Shader(const char* path, Type type)
-	: m_type(type)
-{
-	std::string code;
+void fill_stream(const std::filesystem::path& path, std::stringstream& stream) {
 	std::ifstream file;
-	
 	file.open(path);
 	if (!file)
 	{
@@ -21,13 +17,38 @@ Shader::Shader(const char* path, Type type)
 	}
 	else
 	{
-		std::stringstream stream;
+		std::string line;
+		while (file) {
+			std::getline(file, line);
+			if (line.rfind("#include", 0) == 0) {
+				size_t ini = line.find_first_of('\"');
+				size_t last = line.find_last_of('\"');
+				if (ini == last || ini + 1 >= last) {
+					std::cerr << "Failed include, no \" pair in " << path << std::endl;
+					continue;
+				}
+				std::string new_file = line.substr(ini + 1, last - ini - 1);
+				fill_stream(path.parent_path() / new_file, stream);
+			}
+			else {
+				stream << line << "\n";
+			}
 
-		stream << file.rdbuf();
+		}
 
 		file.close();
-		code = stream.str();
 	}
+}
+
+Shader::Shader(const std::filesystem::path& path, Type type)
+	: m_type(type)
+{
+	
+	std::stringstream stream;
+
+	fill_stream(path, stream);
+	
+	const std::string code = stream.str();
 
 
 	// compilation

@@ -8,15 +8,20 @@ add_subdirectory(src)
 
 add_subdirectory(libs)
 
-
+# include resources to project
 set(RESOURCES_PATH "resources")
 set(PLY_PATH "${RESOURCES_PATH}/ply")
 set(SHADER_PATH "${RESOURCES_PATH}/shaders")
+set(SHADER_INCLUDE_PATH "${RESOURCES_PATH}/shader_includes")
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${SHADER_INCLUDE_PATH})
 
 set(COPY_DATA
     ${PLY_PATH}/icosahedron.ply
 
     ${SHADER_PATH}/simpl.vert   ${SHADER_PATH}/simpl.frag
+
+    ${SHADER_INCLUDE_PATH}/particle_types.in
 )
 
 foreach(data ${COPY_DATA})

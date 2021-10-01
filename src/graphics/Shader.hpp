@@ -2,6 +2,7 @@
 
 #include <string>
 #include <glm/glm.hpp>
+#include <filesystem>
 
 
 class Shader
@@ -14,7 +15,7 @@ public:
 	};
 
 	Shader() = default;
-	Shader(const char* path, Type type);
+	Shader(const std::filesystem::path& path, Type type);
 
 	Shader(const Shader&) = delete;
 	Shader& operator=(const Shader&) = delete;
