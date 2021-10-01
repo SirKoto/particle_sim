@@ -20,6 +20,7 @@ set(COPY_DATA
     ${PLY_PATH}/icosahedron.ply
 
     ${SHADER_PATH}/simpl.vert   ${SHADER_PATH}/simpl.frag
+    ${SHADER_PATH}/advect_particles.comp
 
     ${SHADER_INCLUDE_PATH}/particle_types.in
 )

@@ -25,5 +25,7 @@ private:
 
 	const uint32_t m_max_particles = 5;
 
+	ShaderProgram m_advect_compute_program;
+
 	void initialize_system();
 };

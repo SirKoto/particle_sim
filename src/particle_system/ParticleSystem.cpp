@@ -15,6 +15,12 @@ ParticleSystem::ParticleSystem()
 	m_ico_mesh.upload_to_gpu();
 
 
+	m_advect_compute_program = ShaderProgram(
+		&Shader(shad_dir / "advect_particles.comp", Shader::Type::Compute),
+		1
+	);
+
+
 	glGenVertexArrays(1, &m_ico_draw_vao);
 	
 
@@ -26,10 +32,14 @@ ParticleSystem::ParticleSystem()
 
 void ParticleSystem::update()
 {
+	m_advect_compute_program.use_program();
+	glDispatchCompute(m_max_particles, 1, 1);
 }
 
 void ParticleSystem::gl_render_particles() const
 {
+	glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+
 	glBindVertexArray(m_ico_draw_vao);
 
 	// glDrawElements(GL_TRIANGLES, (GLsizei)m_ico_mesh.get_faces().size() * 3, GL_UNSIGNED_INT, nullptr);
@@ -63,6 +73,8 @@ void ParticleSystem::initialize_system()
 	glVertexAttribDivisor(0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particle_buffer[0]);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_vbo_particle_buffer[0]);
+
 	// offsets in location 1
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,

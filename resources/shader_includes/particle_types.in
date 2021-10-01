@@ -1,10 +1,13 @@
 
 #ifdef __cplusplus
     #define VEC3 glm::vec3
+    #define ALIGN(a) alignas(a)
 #else
     #define VEC3 vec3
+    #define ALIGN(a)
 #endif
 
 struct Particle {
-    VEC3 pos;
+    ALIGN(16) VEC3 pos;
+    float padding;
 };
