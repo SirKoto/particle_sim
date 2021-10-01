@@ -3,15 +3,19 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <cstdint>
+#include <filesystem>
 
 
 class TriangleMesh {
 public:
-	TriangleMesh(const char* path);
+	TriangleMesh();
+	TriangleMesh(const std::filesystem::path& path);
 	~TriangleMesh();
 
 	TriangleMesh(const TriangleMesh&) = delete;
 	TriangleMesh& operator=(const TriangleMesh&) = delete;
+	TriangleMesh& operator=(TriangleMesh&&);
+
 
 	void print_debug_info() const;
 

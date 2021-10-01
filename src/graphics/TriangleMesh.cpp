@@ -4,9 +4,14 @@
 #include <tinyply.h>
 #include <glad/glad.h>
 
-TriangleMesh::TriangleMesh(const char* path)
+TriangleMesh::TriangleMesh()
 {
-	parse_ply(path);
+	std::memset(m_vbos, 0, sizeof(m_vbos));
+}
+
+TriangleMesh::TriangleMesh(const std::filesystem::path& path)
+{
+	parse_ply(path.string().c_str());
 
 	glGenBuffers(sizeof(m_vbos) / sizeof(*m_vbos), m_vbos);
 }
@@ -14,6 +19,21 @@ TriangleMesh::TriangleMesh(const char* path)
 TriangleMesh::~TriangleMesh()
 {
 	glDeleteBuffers(sizeof(m_vbos) / sizeof(*m_vbos), m_vbos);
+}
+
+TriangleMesh& TriangleMesh::operator=(TriangleMesh&& o)
+{
+	if (m_vbo_vertices != 0) {
+		glDeleteBuffers(sizeof(m_vbos) / sizeof(*m_vbos), m_vbos);
+	}
+	
+	std::memcpy(m_vbos, o.m_vbos, sizeof(m_vbos));
+	std::memset(o.m_vbos, 0, sizeof(m_vbos));
+
+	m_vertices = std::move(o.m_vertices);
+	m_faces = std::move(o.m_faces);
+
+	return *this;
 }
 
 void TriangleMesh::print_debug_info() const

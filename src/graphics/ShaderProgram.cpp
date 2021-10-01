@@ -23,7 +23,9 @@ ShaderProgram::ShaderProgram(const Shader* shaders, uint32_t num)
 
 ShaderProgram& ShaderProgram::operator=(ShaderProgram&& o)
 {
-	this->~ShaderProgram();
+	if (m_id != 0) {
+		glDeleteProgram(m_id);
+	}
 
 	m_id = o.m_id;
 	o.m_id = 0;

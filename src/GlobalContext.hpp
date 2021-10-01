@@ -4,7 +4,7 @@
 #include "Camera.hpp"
 #include "graphics/TriangleMesh.hpp"
 #include "graphics/ShaderProgram.hpp"
-
+#include "particle_system/ParticleSystem.hpp"
 
 
 class GlobalContext
@@ -12,6 +12,9 @@ class GlobalContext
 public:
 
 	GlobalContext();
+
+	GlobalContext(const GlobalContext&) = delete;
+	GlobalContext& operator=(const GlobalContext&) = delete;
 
 	void update();
 
@@ -25,9 +28,8 @@ private:
 	glm::vec3 m_clear_color = glm::vec3(0.45f, 0.55f, 0.60f);
 	Camera m_camera;
 
-	TriangleMesh m_ico_mesh;
 	ShaderProgram m_particle_draw_program;
-	uint32_t m_ico_draw_vao;
+	ParticleSystem m_particle_sys;
 
 };
 

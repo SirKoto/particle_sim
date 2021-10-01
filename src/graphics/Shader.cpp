@@ -72,7 +72,9 @@ Shader::Shader(const std::filesystem::path& path, Type type)
 
 Shader& Shader::operator=(Shader&& o)
 {
-	this->~Shader();
+	if (m_id != 0) {
+		glDeleteShader(m_id);
+	}
 
 	m_id = o.m_id;
 	o.m_id = 0;
