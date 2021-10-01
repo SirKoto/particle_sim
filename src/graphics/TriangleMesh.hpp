@@ -24,6 +24,8 @@ public:
 	void apply_transform(const glm::mat4& t);
 
 	void upload_to_gpu(bool dynamic_verts= false, bool dynamic_indices = false);
+
+	// Enables attrib 0 with vec3, vertex coordinates
 	void gl_bind_to_vao() const;
 
 	const std::vector<glm::vec3>& get_vertices() const {

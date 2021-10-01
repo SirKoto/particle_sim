@@ -3,6 +3,7 @@
 #include "../shader_includes/particle_types.in"
 
 layout(location = 0) in vec3 iPos;
+layout(location = 1) in vec3 iOffset;
 //layout(location = 1) in vec3 iNorm;
 //layout(location = 2) in vec2 iUv;
 //layout(location = 3) in vec2 iOffsetXZ;
@@ -39,6 +40,6 @@ void main() {
     }
     */
     //vec4 posWorld = M * vec4(iPos, 1.0) + vec4(iOffsetXZ.x, 0, iOffsetXZ.y, 0);
-    gl_Position = PV * vec4(iPos, 1.0);
+    gl_Position = PV * vec4(iPos + iOffset, 1.0);
 
 }

@@ -20,4 +20,10 @@ public:
 private:
 	TriangleMesh m_ico_mesh;
 	uint32_t m_ico_draw_vao;
+
+	uint32_t m_vbo_particle_buffer[1];
+
+	const uint32_t m_max_particles = 5;
+
+	void initialize_system();
 };
