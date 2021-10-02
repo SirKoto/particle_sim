@@ -15,6 +15,7 @@ struct ParticleSystemConfig {
     float particle_size;
     float simulation_space_size;
     float k_v;
+    float bounce;
 };
 
 struct Particle {

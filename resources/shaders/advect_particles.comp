@@ -21,13 +21,26 @@ layout(binding = 3, offset = 4) uniform atomic_uint particles_alive;
 
 layout(location = 0) uniform float dt;
 
+const float bounce = 1.0;
+
 void main() {
     const uint idx = gl_GlobalInvocationID.x;
 
     // verlet solver
     const vec3 old_pos = particles_out[idx].pos;
-    const vec3 actual_pos = particles_in[idx].pos;
+    vec3 actual_pos = particles_in[idx].pos;
     vec3 new_pos = actual_pos + config.k_v * (actual_pos - old_pos) - vec3(0.0, dt * dt * config.gravity, 0.0);
     
+    // Colide against 5 walls
+    // Bottom
+    if(new_pos.y < 0.0) {
+        const float delta_y = new_pos.y - actual_pos.y;
+        //new_pos.y = new_pos.y - (1.0 + config.bounce) * new_pos.y;
+        //actual_pos.y = new_pos.y - (delta_y - (1.0 + config.bounce) * delta_y);
+        new_pos.y = - new_pos.y * config.bounce ;
+        actual_pos.y = new_pos.y + delta_y * config.bounce;
+    }
+
+    particles_in[idx].pos = actual_pos;
     particles_out[idx].pos = new_pos;
 }

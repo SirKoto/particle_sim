@@ -34,7 +34,8 @@ ParticleSystem::ParticleSystem()
 	m_system_config.gravity = 9.8f;
 	m_system_config.particle_size = 1.0e-1f;
 	m_system_config.simulation_space_size = 10.0f;
-	m_system_config.k_v = 0.99f;
+	m_system_config.k_v = 0.9999f;
+	m_system_config.bounce = 0.5f;
 	glGenBuffers(1, &m_system_config_bo);
 	update_sytem_config();
 
@@ -51,7 +52,7 @@ void ParticleSystem::update()
 
 
 	m_advect_compute_program.use_program();
-	glUniform1f(0, ImGui::GetIO().DeltaTime);
+	glUniform1f(0, std::min(ImGui::GetIO().DeltaTime, 1 / 60.0f));
 	glDispatchCompute(m_system_config.max_particles, 1, 1);
 }
 
@@ -76,7 +77,9 @@ void ParticleSystem::imgui_draw()
 	ImGui::InputFloat("Gravity", &m_system_config.gravity, 0.1f);
 	ImGui::InputFloat("Particle size", &m_system_config.particle_size, 0.1f);
 	ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
-	ImGui::InputFloat("Verlet damping", &m_system_config.k_v);
+	ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0f, 0.0f, "%.5f");
+	ImGui::InputFloat("Bounciness", &m_system_config.bounce, 0.1f);
+
 	ImGui::Separator();
 
 	if (ImGui::Button("Commit config")) {
