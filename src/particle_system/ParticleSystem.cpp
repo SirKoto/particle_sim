@@ -26,7 +26,7 @@ ParticleSystem::ParticleSystem()
 
 	// Generate particle buffers
 	glGenBuffers(sizeof(m_vbo_particle_buffer) / sizeof(*m_vbo_particle_buffer), m_vbo_particle_buffer);
-
+	glGenBuffers(1, &m_atomic_num_particles_alive_bo);
 	initialize_system();
 }
 
@@ -64,8 +64,18 @@ void ParticleSystem::initialize_system()
 		particles[i].pos.x += (float)i;
 	}
 
+	// Initialize particle buffers
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particle_buffer[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * m_max_particles, particles.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * m_max_particles, particles.data(), GL_DYNAMIC_DRAW);
+	// Bind in compute shader as binding 0
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_vbo_particle_buffer[0]);
+
+	// Initialize number of alive particles at the beginning
+	// TODO: set zero
+	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomic_num_particles_alive_bo);
+	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t), &m_max_particles, GL_DYNAMIC_DRAW);
+	// Binding 2
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 2, m_atomic_num_particles_alive_bo);
 
 
 	glBindVertexArray(m_ico_draw_vao);
@@ -73,7 +83,7 @@ void ParticleSystem::initialize_system()
 	glVertexAttribDivisor(0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particle_buffer[0]);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_vbo_particle_buffer[0]);
+
 
 	// offsets in location 1
 	glEnableVertexAttribArray(1);

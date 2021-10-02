@@ -24,6 +24,7 @@ private:
 	uint32_t m_vbo_particle_buffer[1];
 
 	const uint32_t m_max_particles = 5;
+	uint32_t m_atomic_num_particles_alive_bo;
 
 	ShaderProgram m_advect_compute_program;
 
