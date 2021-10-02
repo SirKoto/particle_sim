@@ -8,6 +8,8 @@ add_executable(${PROJECT_NAME}
 	graphics/TriangleMesh.cpp	graphics/TriangleMesh.hpp
 	graphics/Shader.cpp	graphics/Shader.hpp
 	graphics/ShaderProgram.cpp graphics/ShaderProgram.hpp
+	graphics/my_gl_header.hpp
+
 
 	particle_system/ParticleSystem.cpp	particle_system/ParticleSystem.hpp
 )

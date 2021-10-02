@@ -5,6 +5,7 @@
 #include <imgui.h>
 
 #include "particle_types.in"
+#include "graphics/my_gl_header.hpp"
 
 ParticleSystem::ParticleSystem()
 {
@@ -27,6 +28,7 @@ ParticleSystem::ParticleSystem()
 	// Generate particle buffers
 	glGenBuffers(sizeof(m_vbo_particle_buffer) / sizeof(*m_vbo_particle_buffer), m_vbo_particle_buffer);
 	glGenBuffers(1, &m_atomic_num_particles_alive_bo);
+	glGenBuffers(1, &m_draw_indirect_bo);
 	initialize_system();
 }
 
@@ -42,13 +44,10 @@ void ParticleSystem::gl_render_particles() const
 
 	glBindVertexArray(m_ico_draw_vao);
 
-	// glDrawElements(GL_TRIANGLES, (GLsizei)m_ico_mesh.get_faces().size() * 3, GL_UNSIGNED_INT, nullptr);
-	glDrawElementsInstanced(GL_TRIANGLES,
-		(GLsizei)m_ico_mesh.get_faces().size() * 3, // num elements
-		GL_UNSIGNED_INT, // type
-		nullptr, // indices, already in elements buffer
-		m_max_particles // instance count
-	);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_draw_indirect_bo);
+	glDrawElementsIndirect(GL_TRIANGLES,
+		GL_UNSIGNED_INT,
+		(void*)0);
 }
 
 void ParticleSystem::imgui_draw()
@@ -76,6 +75,19 @@ void ParticleSystem::initialize_system()
 	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t), &m_max_particles, GL_DYNAMIC_DRAW);
 	// Binding 2
 	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 2, m_atomic_num_particles_alive_bo);
+
+	// Initialise indirect draw buffer
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_draw_indirect_bo);
+	DrawElementsIndirectCommand command{
+		(uint32_t)m_ico_mesh.get_faces().size() * 3, // num elements
+		m_max_particles, // instance count
+		0, // first index
+		0, // basevertex
+		0 // baseinstance
+	};
+	glBufferData(GL_DRAW_INDIRECT_BUFFER, 
+		sizeof(DrawElementsIndirectCommand), 
+		&command, GL_DYNAMIC_DRAW);
 
 
 	glBindVertexArray(m_ico_draw_vao);

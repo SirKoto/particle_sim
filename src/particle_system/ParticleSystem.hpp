@@ -26,6 +26,8 @@ private:
 	const uint32_t m_max_particles = 5;
 	uint32_t m_atomic_num_particles_alive_bo;
 
+	uint32_t m_draw_indirect_bo;
+
 	ShaderProgram m_advect_compute_program;
 
 	void initialize_system();
