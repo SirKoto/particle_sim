@@ -74,7 +74,6 @@ void ParticleSystem::initialize_system()
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomic_num_particles_alive_bo);
 	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t), &m_max_particles, GL_DYNAMIC_DRAW);
 	// Binding 2
-	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 2, m_atomic_num_particles_alive_bo);
 
 	// Initialise indirect draw buffer
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_draw_indirect_bo);
@@ -88,6 +87,7 @@ void ParticleSystem::initialize_system()
 	glBufferData(GL_DRAW_INDIRECT_BUFFER, 
 		sizeof(DrawElementsIndirectCommand), 
 		&command, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 2, m_draw_indirect_bo);
 
 
 	glBindVertexArray(m_ico_draw_vao);
