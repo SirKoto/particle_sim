@@ -28,6 +28,9 @@ private:
 	glm::vec3 m_clear_color = glm::vec3(0.45f, 0.55f, 0.60f);
 	Camera m_camera;
 
+	bool m_show_imgui_demo_window = true;
+	bool m_show_camera_window = false;
+
 	ShaderProgram m_particle_draw_program;
 	ParticleSystem m_particle_sys;
 

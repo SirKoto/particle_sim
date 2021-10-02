@@ -2,6 +2,7 @@
 
 #include "graphics/ShaderProgram.hpp"
 #include "graphics/TriangleMesh.hpp"
+#include "particle_types.in"
 
 
 class ParticleSystem {
@@ -23,12 +24,16 @@ private:
 
 	uint32_t m_vbo_particle_buffer[1];
 
-	const uint32_t m_max_particles = 5;
 	uint32_t m_atomic_num_particles_alive_bo;
 
 	uint32_t m_draw_indirect_bo;
 
 	ShaderProgram m_advect_compute_program;
 
+	ParticleSystemConfig m_system_config;
+	uint32_t m_system_config_bo;
+
+
 	void initialize_system();
+	void update_sytem_config();
 };

@@ -39,8 +39,16 @@ void main_loop(GLFWwindow* window) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        if (show_demo_window) {
-            ImGui::ShowDemoWindow(&show_demo_window);
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+                if (ImGui::Button("Quit")) {
+                    glfwSetWindowShouldClose(window, true);
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
         }
 
         // Update global context

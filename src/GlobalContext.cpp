@@ -26,12 +26,37 @@ void GlobalContext::update()
     // to use cpu time drawing the gui
     m_particle_sys.update();
 
+    if (ImGui::BeginMainMenuBar())
+    {
 
-    if (ImGui::Begin("Simulator")) {
-        m_camera.renderImGui();
+        if (ImGui::BeginMenu("Debug"))
+        {
+            ImGui::Checkbox("ImGui Demo Window", &m_show_imgui_demo_window);
+            ImGui::Checkbox("Camera info", &m_show_camera_window);
+
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
+
+    if (m_show_imgui_demo_window) {
+        ImGui::ShowDemoWindow(&m_show_imgui_demo_window);
+    }
+
+    if (m_show_camera_window) {
+        if (ImGui::Begin("Camera", &m_show_camera_window)) {
+            m_camera.renderImGui();
+        }
+        ImGui::End();
+    }
+
+    if (ImGui::Begin("Simulation Config")) {
 
         m_particle_sys.imgui_draw();
+
     }
+
     ImGui::End();
 
     // Camera update

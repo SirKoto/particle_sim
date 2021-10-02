@@ -1,13 +1,27 @@
 
 #ifdef __cplusplus
+    #pragma once
     #define VEC3 glm::vec3
     #define ALIGN(a) alignas(a)
 #else
+    #extension GL_NV_gpu_shader5 : enable
     #define VEC3 vec3
     #define ALIGN(a)
 #endif
 
+struct ParticleSystemConfig {
+    uint32_t max_particles;
+    float gravity;
+    float particle_size;
+    float simulation_space_size;
+};
+
 struct Particle {
     ALIGN(16) VEC3 pos;
-    float padding;
+    float size;
 };
+
+#ifdef __cplusplus
+    #undef VEC3
+    #undef ALIGN
+#endif

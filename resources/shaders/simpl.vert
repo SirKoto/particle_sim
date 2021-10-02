@@ -2,6 +2,10 @@
 
 #include "../shader_includes/particle_types.in"
 
+layout(std430, binding = 0) buffer ConfigData{
+    ParticleSystemConfig config;
+};
+
 layout(location = 0) in vec3 iPos;
 layout(location = 1) in vec3 iOffset;
 //layout(location = 1) in vec3 iNorm;
@@ -40,6 +44,6 @@ void main() {
     }
     */
     //vec4 posWorld = M * vec4(iPos, 1.0) + vec4(iOffsetXZ.x, 0, iOffsetXZ.y, 0);
-    gl_Position = PV * vec4(iPos + iOffset, 1.0);
+    gl_Position = PV * vec4(iPos * config.particle_size + iOffset, 1.0);
 
 }

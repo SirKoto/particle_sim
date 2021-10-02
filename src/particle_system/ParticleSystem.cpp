@@ -4,7 +4,6 @@
 #include <glad/glad.h>
 #include <imgui.h>
 
-#include "particle_types.in"
 #include "graphics/my_gl_header.hpp"
 
 ParticleSystem::ParticleSystem()
@@ -29,13 +28,22 @@ ParticleSystem::ParticleSystem()
 	glGenBuffers(sizeof(m_vbo_particle_buffer) / sizeof(*m_vbo_particle_buffer), m_vbo_particle_buffer);
 	glGenBuffers(1, &m_atomic_num_particles_alive_bo);
 	glGenBuffers(1, &m_draw_indirect_bo);
+
+	// Setup configuration
+	m_system_config.max_particles = 5;
+	m_system_config.gravity = 9.8f;
+	m_system_config.particle_size = 1.0e-1f;
+	m_system_config.simulation_space_size = 10.0f;
+	glGenBuffers(1, &m_system_config_bo);
+	update_sytem_config();
+
 	initialize_system();
 }
 
 void ParticleSystem::update()
 {
 	m_advect_compute_program.use_program();
-	glDispatchCompute(m_max_particles, 1, 1);
+	glDispatchCompute(m_system_config.max_particles, 1, 1);
 }
 
 void ParticleSystem::gl_render_particles() const
@@ -52,34 +60,49 @@ void ParticleSystem::gl_render_particles() const
 
 void ParticleSystem::imgui_draw()
 {
+	ImGui::PushID("Particlesystem");
 	ImGui::Text("Particle System Config");
+	ImGui::InputScalar("Max particles", ImGuiDataType_U32, &m_system_config.max_particles);
+	ImGui::InputFloat("Gravity", &m_system_config.gravity, 0.1f);
+	ImGui::InputFloat("Particle size", &m_system_config.particle_size, 0.1f);
+	ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
+
 	ImGui::Separator();
+
+	if (ImGui::Button("Commit config")) {
+		update_sytem_config();
+		initialize_system();
+	}
+
+	ImGui::PopID();
+
 }
 
 void ParticleSystem::initialize_system()
 {
-	std::vector<Particle> particles(m_max_particles, { glm::vec3(0.0f) });
-	for (uint32_t i = 0; i < m_max_particles; ++i) {
+	std::vector<Particle> particles(m_system_config.max_particles, { glm::vec3(0.0f) });
+	for (uint32_t i = 0; i < m_system_config.max_particles; ++i) {
 		particles[i].pos.x += (float)i;
 	}
 
 	// Initialize particle buffers
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particle_buffer[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * m_max_particles, particles.data(), GL_DYNAMIC_DRAW);
-	// Bind in compute shader as binding 0
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_vbo_particle_buffer[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * m_system_config.max_particles, 
+		particles.data(), GL_DYNAMIC_DRAW);
+	// Bind in compute shader as binding 1
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo_particle_buffer[0]);
 
 	// Initialize number of alive particles at the beginning
 	// TODO: set zero
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomic_num_particles_alive_bo);
-	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t), &m_max_particles, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t), &m_system_config.max_particles, GL_DYNAMIC_DRAW);
 	// Binding 2
 
 	// Initialise indirect draw buffer
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_draw_indirect_bo);
 	DrawElementsIndirectCommand command{
 		(uint32_t)m_ico_mesh.get_faces().size() * 3, // num elements
-		m_max_particles, // instance count
+		m_system_config.max_particles, // instance count
 		0, // first index
 		0, // basevertex
 		0 // baseinstance
@@ -105,4 +128,12 @@ void ParticleSystem::initialize_system()
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+}
+
+void ParticleSystem::update_sytem_config()
+{
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_system_config_bo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ParticleSystemConfig),
+		&m_system_config, GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_system_config_bo);
 }
