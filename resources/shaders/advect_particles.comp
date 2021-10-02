@@ -7,15 +7,27 @@ layout(std430, binding = 0) buffer ConfigData{
     ParticleSystemConfig config;
 };
 
-layout(std430, binding = 1) buffer ParticleData
+layout(std430, binding = 1) buffer ParticleDataIn
 {
-    Particle particles[];
+    Particle particles_in[];
 };
 
-layout(binding = 2, offset = 4) uniform atomic_uint particles_alive;
+layout(std430, binding = 2) buffer ParticleDataOut
+{
+    Particle particles_out[];
+};
+
+layout(binding = 3, offset = 4) uniform atomic_uint particles_alive;
+
+layout(location = 0) uniform float dt;
 
 void main() {
-    uint idx = gl_GlobalInvocationID.x;
+    const uint idx = gl_GlobalInvocationID.x;
+
+    // verlet solver
+    const vec3 old_pos = particles_out[idx].pos;
+    const vec3 actual_pos = particles_in[idx].pos;
+    vec3 new_pos = actual_pos + config.k_v * (actual_pos - old_pos) - vec3(0.0, dt * dt * config.gravity, 0.0);
     
-    particles[idx].pos.x += 0.01;
+    particles_out[idx].pos = new_pos;
 }

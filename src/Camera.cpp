@@ -5,7 +5,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 
-Camera::Camera() : mPosition(0,0,5), mFront(0,0,-1), mUp(0,1,0), mYaw(-90.f),mPitch(0), mMouseSensitivity(0.1f), mSpeed(2.5f), mZoom(45.f)
+Camera::Camera() : mPosition(5,5,15), mFront(0,0,-1), 
+	mUp(0,1,0), mYaw(-90.f),mPitch(0), 
+	mMouseSensitivity(0.1f), mSpeed(2.5f), mZoom(45.f)
 {
 	updateCameraVectors();
 }

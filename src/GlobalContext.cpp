@@ -34,9 +34,11 @@ void GlobalContext::update()
             ImGui::Checkbox("ImGui Demo Window", &m_show_imgui_demo_window);
             ImGui::Checkbox("Camera info", &m_show_camera_window);
 
+
             ImGui::EndMenu();
         }
 
+        ImGui::Text("Framerate %.1f", ImGui::GetIO().Framerate);
         ImGui::EndMainMenuBar();
     }
 

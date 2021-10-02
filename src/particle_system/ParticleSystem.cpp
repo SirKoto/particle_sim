@@ -21,11 +21,11 @@ ParticleSystem::ParticleSystem()
 	);
 
 
-	glGenVertexArrays(1, &m_ico_draw_vao);
+	glGenVertexArrays(2, m_ico_draw_vaos);
 	
 
 	// Generate particle buffers
-	glGenBuffers(sizeof(m_vbo_particle_buffer) / sizeof(*m_vbo_particle_buffer), m_vbo_particle_buffer);
+	glGenBuffers(2, m_vbo_particle_buffers);
 	glGenBuffers(1, &m_atomic_num_particles_alive_bo);
 	glGenBuffers(1, &m_draw_indirect_bo);
 
@@ -34,6 +34,7 @@ ParticleSystem::ParticleSystem()
 	m_system_config.gravity = 9.8f;
 	m_system_config.particle_size = 1.0e-1f;
 	m_system_config.simulation_space_size = 10.0f;
+	m_system_config.k_v = 0.99f;
 	glGenBuffers(1, &m_system_config_bo);
 	update_sytem_config();
 
@@ -42,7 +43,15 @@ ParticleSystem::ParticleSystem()
 
 void ParticleSystem::update()
 {
+	// Bind in compute shader as bindings 1 and 2
+	// 1 is previous frame, and 2 is the next
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo_particle_buffers[m_flipflop_state]);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_vbo_particle_buffers[1 - m_flipflop_state]);
+	m_flipflop_state = !m_flipflop_state;
+
+
 	m_advect_compute_program.use_program();
+	glUniform1f(0, ImGui::GetIO().DeltaTime);
 	glDispatchCompute(m_system_config.max_particles, 1, 1);
 }
 
@@ -50,12 +59,13 @@ void ParticleSystem::gl_render_particles() const
 {
 	glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
 
-	glBindVertexArray(m_ico_draw_vao);
+	glBindVertexArray(m_ico_draw_vaos[m_flipflop_state]);
 
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_draw_indirect_bo);
 	glDrawElementsIndirect(GL_TRIANGLES,
 		GL_UNSIGNED_INT,
 		(void*)0);
+
 }
 
 void ParticleSystem::imgui_draw()
@@ -66,7 +76,7 @@ void ParticleSystem::imgui_draw()
 	ImGui::InputFloat("Gravity", &m_system_config.gravity, 0.1f);
 	ImGui::InputFloat("Particle size", &m_system_config.particle_size, 0.1f);
 	ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
-
+	ImGui::InputFloat("Verlet damping", &m_system_config.k_v);
 	ImGui::Separator();
 
 	if (ImGui::Button("Commit config")) {
@@ -80,17 +90,17 @@ void ParticleSystem::imgui_draw()
 
 void ParticleSystem::initialize_system()
 {
-	std::vector<Particle> particles(m_system_config.max_particles, { glm::vec3(0.0f) });
+	std::vector<Particle> particles(m_system_config.max_particles, { glm::vec3(5.0f) });
 	for (uint32_t i = 0; i < m_system_config.max_particles; ++i) {
 		particles[i].pos.x += (float)i;
 	}
 
 	// Initialize particle buffers
-	glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particle_buffer[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * m_system_config.max_particles, 
-		particles.data(), GL_DYNAMIC_DRAW);
-	// Bind in compute shader as binding 1
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo_particle_buffer[0]);
+	for (uint32_t i = 0; i < 2; ++i) {
+		glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particle_buffers[i]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * m_system_config.max_particles,
+			particles.data(), GL_DYNAMIC_DRAW);
+	}
 
 	// Initialize number of alive particles at the beginning
 	// TODO: set zero
@@ -98,7 +108,7 @@ void ParticleSystem::initialize_system()
 	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t), &m_system_config.max_particles, GL_DYNAMIC_DRAW);
 	// Binding 2
 
-	// Initialise indirect draw buffer
+	// Initialise indirect draw buffer, and bind in 3
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_draw_indirect_bo);
 	DrawElementsIndirectCommand command{
 		(uint32_t)m_ico_mesh.get_faces().size() * 3, // num elements
@@ -110,21 +120,22 @@ void ParticleSystem::initialize_system()
 	glBufferData(GL_DRAW_INDIRECT_BUFFER, 
 		sizeof(DrawElementsIndirectCommand), 
 		&command, GL_DYNAMIC_DRAW);
-	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 2, m_draw_indirect_bo);
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 3, m_draw_indirect_bo);
 
+	// Create 2 vaos, for each vbo of particles
+	for (uint32_t i = 0; i < 2; ++i) {
+		glBindVertexArray(m_ico_draw_vaos[i]);
+		m_ico_mesh.gl_bind_to_vao();
+		glVertexAttribDivisor(0, 0);
 
-	glBindVertexArray(m_ico_draw_vao);
-	m_ico_mesh.gl_bind_to_vao();
-	glVertexAttribDivisor(0, 0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particle_buffer[0]);
-
-
-	// offsets in location 1
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
-		sizeof(Particle), (void*)offsetof(Particle, pos));
-	glVertexAttribDivisor(1, 1);
+		glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particle_buffers[i]);
+		// offsets in location 1. Only set position as attrib
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+			sizeof(Particle), (void*)offsetof(Particle, pos));
+		glVertexAttribDivisor(1, 1);
+	}
+	
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);

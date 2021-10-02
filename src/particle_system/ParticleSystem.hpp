@@ -20,9 +20,10 @@ public:
 
 private:
 	TriangleMesh m_ico_mesh;
-	uint32_t m_ico_draw_vao;
+	uint32_t m_ico_draw_vaos[2];
 
-	uint32_t m_vbo_particle_buffer[1];
+	bool m_flipflop_state = false;
+	uint32_t m_vbo_particle_buffers[2];
 
 	uint32_t m_atomic_num_particles_alive_bo;
 
