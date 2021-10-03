@@ -40,6 +40,30 @@ void main() {
         new_pos.y = - new_pos.y * config.bounce ;
         actual_pos.y = new_pos.y + delta_y * config.bounce;
     }
+    // Back
+    if(new_pos.z < 0.0) {
+        const float delta_z = new_pos.z - actual_pos.z;
+        new_pos.z = - new_pos.z * config.bounce ;
+        actual_pos.z = new_pos.z + delta_z * config.bounce;
+    }
+    // Left
+    if(new_pos.x < 0.0) {
+        const float delta_x = new_pos.x - actual_pos.x;
+        new_pos.x = - new_pos.x * config.bounce;
+        actual_pos.x = new_pos.x + delta_x * config.bounce;
+    }
+    // Front
+    if(new_pos.z > config.simulation_space_size) {
+        const float delta_z = new_pos.z - actual_pos.z;
+        new_pos.z = new_pos.z - (1.0 + config.bounce) * (new_pos.z - config.simulation_space_size);
+        actual_pos.z = new_pos.z + delta_z * config.bounce;
+    }
+    // Right
+    if(new_pos.x  > config.simulation_space_size) {
+        const float delta_x = new_pos.x - actual_pos.x;
+        new_pos.x = new_pos.x - (1.0 + config.bounce) * (new_pos.x - config.simulation_space_size);
+        actual_pos.x = new_pos.x + delta_x * config.bounce;
+    }
 
     particles_in[idx].pos = actual_pos;
     particles_out[idx].pos = new_pos;

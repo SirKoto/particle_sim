@@ -113,6 +113,7 @@ void ParticleSystem::imgui_draw()
 
 void ParticleSystem::initialize_system()
 {
+	m_flipflop_state = false;
 	std::vector<Particle> particles(m_system_config.max_particles, { glm::vec3(5.0f) });
 	for (uint32_t i = 0; i < m_system_config.max_particles; ++i) {
 		particles[i].pos.x += (float)i;
