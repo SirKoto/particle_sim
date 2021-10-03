@@ -28,6 +28,20 @@ ParticleSystem::ParticleSystem()
 	glGenBuffers(2, m_vbo_particle_buffers);
 	glGenBuffers(1, &m_atomic_num_particles_alive_bo);
 	glGenBuffers(1, &m_draw_indirect_bo);
+	{
+		// Initialise indirect draw buffer, and bind in 3
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_draw_indirect_bo);
+		DrawElementsIndirectCommand command{
+			(uint32_t)m_ico_mesh.get_faces().size() * 3, // num elements
+			0, // instance count
+			0, // first index
+			0, // basevertex
+			0 // baseinstance
+		};
+		glBufferData(GL_DRAW_INDIRECT_BUFFER,
+			sizeof(DrawElementsIndirectCommand),
+			&command, GL_DYNAMIC_DRAW);
+	}
 
 	// Setup configuration
 	m_system_config.max_particles = 5;
@@ -63,9 +77,15 @@ void ParticleSystem::gl_render_particles() const
 	glBindVertexArray(m_ico_draw_vaos[m_flipflop_state]);
 
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_draw_indirect_bo);
+
 	glDrawElementsIndirect(GL_TRIANGLES,
 		GL_UNSIGNED_INT,
 		(void*)0);
+
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
+
+	glBindVertexArray(0);
+
 
 }
 
@@ -104,27 +124,17 @@ void ParticleSystem::initialize_system()
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * m_system_config.max_particles,
 			particles.data(), GL_DYNAMIC_DRAW);
 	}
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	// Initialize number of alive particles at the beginning
-	// TODO: set zero
-	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomic_num_particles_alive_bo);
-	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t), &m_system_config.max_particles, GL_DYNAMIC_DRAW);
-	// Binding 2
 
-	// Initialise indirect draw buffer, and bind in 3
+	// Initialise indirect draw buffer, and bind in 3, to use the atomic counter to track the particles that are alvive
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_draw_indirect_bo);
-	DrawElementsIndirectCommand command{
-		(uint32_t)m_ico_mesh.get_faces().size() * 3, // num elements
-		m_system_config.max_particles, // instance count
-		0, // first index
-		0, // basevertex
-		0 // baseinstance
-	};
-	glBufferData(GL_DRAW_INDIRECT_BUFFER, 
-		sizeof(DrawElementsIndirectCommand), 
-		&command, GL_DYNAMIC_DRAW);
+	glBufferSubData(GL_DRAW_INDIRECT_BUFFER, offsetof(DrawElementsIndirectCommand, primCount),
+		sizeof(uint32_t), &m_system_config.max_particles);
 	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 3, m_draw_indirect_bo);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
+	
 	// Create 2 vaos, for each vbo of particles
 	for (uint32_t i = 0; i < 2; ++i) {
 		glBindVertexArray(m_ico_draw_vaos[i]);
@@ -138,7 +148,7 @@ void ParticleSystem::initialize_system()
 			sizeof(Particle), (void*)offsetof(Particle, pos));
 		glVertexAttribDivisor(1, 1);
 	}
-	
+
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -150,4 +160,5 @@ void ParticleSystem::update_sytem_config()
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ParticleSystemConfig),
 		&m_system_config, GL_STATIC_DRAW);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_system_config_bo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }

@@ -4,7 +4,7 @@
     #define VEC3 glm::vec3
     #define ALIGN(a) alignas(a)
 #else
-    #extension GL_NV_gpu_shader5 : enable
+    #define uint32_t uint
     #define VEC3 vec3
     #define ALIGN(a)
 #endif
@@ -24,6 +24,10 @@ struct Particle {
 };
 
 #ifdef __cplusplus
+    #undef VEC3
+    #undef ALIGN
+#else
+    #undef uint32_t
     #undef VEC3
     #undef ALIGN
 #endif
