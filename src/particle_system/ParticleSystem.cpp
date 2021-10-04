@@ -135,6 +135,7 @@ void ParticleSystem::initialize_system()
 	std::vector<Particle> particles(m_system_config.max_particles, { glm::vec3(5.0f) });
 	for (uint32_t i = 0; i < m_system_config.max_particles; ++i) {
 		particles[i].pos.x += (float)i;
+		particles[i].pos.y += (float)(i) * 0.2f;
 	}
 
 	if (m_max_particles_in_buffers < m_system_config.max_particles) {
@@ -166,8 +167,9 @@ void ParticleSystem::initialize_system()
 			sizeof(uint32_t) * m_system_config.max_particles, // size
 			dead_indices.data());
 
+		// tmp: initialize alive particles (only first frame)
 		if (true) 
-			for (uint32_t i = 0; i < 2; ++i) {
+			for (uint32_t i = 0; i < 1; ++i) {
 				glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_alive_particle_indices[i]);
 				glBufferSubData(GL_SHADER_STORAGE_BUFFER,
 					0, // offset

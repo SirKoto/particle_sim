@@ -36,8 +36,12 @@ layout(location = 0) uniform float dt;
 const float bounce = 1.0;
 
 void main() {
-    const uint idx = gl_GlobalInvocationID.x;
+    const uint thread_id = gl_GlobalInvocationID.x;
+    if(thread_id > config.max_particles) {
+        return;
+    }
 
+    const uint idx = alive_particles_idx[thread_id];
     // verlet solver
     const vec3 old_pos = particles_out[idx].pos;
     vec3 actual_pos = particles_in[idx].pos;
@@ -81,5 +85,6 @@ void main() {
     particles_out[idx].pos = new_pos;
 
     // update alive
-    atomicCounterIncrement(particles_alive_out);
+    alive_next_particles_idx[atomicCounterIncrement(particles_alive_out)] = idx;
+    
 }
