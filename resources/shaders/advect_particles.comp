@@ -17,7 +17,19 @@ layout(std430, binding = 2) buffer ParticleDataOut
     Particle particles_out[];
 };
 
-layout(binding = 3, offset = 4) uniform atomic_uint particles_alive;
+layout(std430, binding = 5) buffer ParticleIndicesAlive
+{
+    uint alive_particles_idx[];
+};
+
+layout(std430, binding = 6) buffer ParticleIndicesAliveNext
+{
+    uint alive_next_particles_idx[];
+};
+
+layout(binding = 3, offset = 4) uniform atomic_uint particles_alive_in;
+layout(binding = 4, offset = 4) uniform atomic_uint particles_alive_out;
+
 
 layout(location = 0) uniform float dt;
 
@@ -67,4 +79,7 @@ void main() {
 
     particles_in[idx].pos = actual_pos;
     particles_out[idx].pos = new_pos;
+
+    // update alive
+    atomicCounterIncrement(particles_alive_out);
 }

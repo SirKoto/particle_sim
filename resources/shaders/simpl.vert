@@ -7,7 +7,7 @@ layout(std430, binding = 0) buffer ConfigData{
 };
 
 layout(location = 0) in vec3 iPos;
-layout(location = 1) in vec3 iOffset;
+//layout(location = 1) in vec3 iOffset;
 //layout(location = 1) in vec3 iNorm;
 //layout(location = 2) in vec2 iUv;
 //layout(location = 3) in vec2 iOffsetXZ;
@@ -15,6 +15,16 @@ layout(location = 1) in vec3 iOffset;
 
 //layout(location = 0) uniform mat4 M;
 layout(location = 1) uniform mat4 PV;
+
+layout(std430, binding = 2) buffer ParticleDataOut
+{
+    Particle particles[];
+};
+
+layout(std430, binding = 6) buffer ParticleIndicesAlive
+{
+    uint alive_particles_idx[];
+};
 
 //out vec3 normWorld;
 //out vec2 uv;
@@ -44,6 +54,7 @@ void main() {
     }
     */
     //vec4 posWorld = M * vec4(iPos, 1.0) + vec4(iOffsetXZ.x, 0, iOffsetXZ.y, 0);
-    gl_Position = PV * vec4(iPos * config.particle_size + iOffset, 1.0);
+    uint idx = alive_particles_idx[gl_InstanceID];
+    gl_Position = PV * vec4(iPos * config.particle_size + particles[idx].pos, 1.0);
 
 }
