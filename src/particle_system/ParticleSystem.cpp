@@ -21,6 +21,11 @@ ParticleSystem::ParticleSystem()
 		1
 	);
 
+	m_simple_spawner_program = ShaderProgram(
+		&Shader(shad_dir / "simple_spawner.comp", Shader::Type::Compute),
+		1
+	);
+
 
 	glGenVertexArrays(1, &m_ico_draw_vao);
 	
@@ -78,11 +83,15 @@ void ParticleSystem::update()
 		offsetof(DrawElementsIndirectCommand, primCount),
 		sizeof(uint32_t), GL_RED, GL_FLOAT, nullptr);
 
-
+	m_simple_spawner_program.use_program();
+	glDispatchCompute(1, 1, 1);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	// Start compute shader
 	m_advect_compute_program.use_program();
 	glUniform1f(0, std::min(ImGui::GetIO().DeltaTime, 1 / 60.0f));
-	glDispatchCompute(m_system_config.max_particles, 1, 1);
+	glDispatchCompute(m_system_config.max_particles / 32
+		+ (m_system_config.max_particles % 32 == 0 ? 0 : 1)
+		, 1, 1);
 
 	// flip state
 	m_flipflop_state = !m_flipflop_state;
@@ -168,7 +177,7 @@ void ParticleSystem::initialize_system()
 			dead_indices.data());
 
 		// tmp: initialize alive particles (only first frame)
-		if (true) 
+		if (false) 
 			for (uint32_t i = 0; i < 1; ++i) {
 				glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_alive_particle_indices[i]);
 				glBufferSubData(GL_SHADER_STORAGE_BUFFER,
@@ -177,9 +186,10 @@ void ParticleSystem::initialize_system()
 					dead_indices.data());
 			}
 	}
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_dead_particle_indices);
 
 	// Initialize particle buffers
-	for (uint32_t i = 0; i < 2; ++i) {
+	for (uint32_t i = 0; i < 0; ++i) {
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particle_buffers[i]);
 		glBufferSubData(GL_ARRAY_BUFFER,
 			0, // offset
@@ -189,11 +199,11 @@ void ParticleSystem::initialize_system()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
-	// Initialise indirect draw buffer, and bind in 3, to use the atomic counter to track the particles that are alvive
+	// Initialise indirect draw buffer, and bind in 3, to use the atomic counter to track the particles that are alive
 	for (uint32_t i = 0; i < 2; ++i) {
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_draw_indirect_buffers[i]);
-		glBufferSubData(GL_DRAW_INDIRECT_BUFFER, offsetof(DrawElementsIndirectCommand, primCount),
-			sizeof(uint32_t), &m_system_config.max_particles);
+		glClearNamedBufferSubData(m_draw_indirect_buffers[i], GL_R32F,
+			offsetof(DrawElementsIndirectCommand, primCount),
+			sizeof(uint32_t), GL_RED, GL_FLOAT, nullptr);
 		glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 3 + i, m_draw_indirect_buffers[i]);
 	}
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);

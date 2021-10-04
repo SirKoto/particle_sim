@@ -27,8 +27,8 @@ layout(std430, binding = 6) buffer ParticleIndicesAliveNext
     uint alive_next_particles_idx[];
 };
 
-layout(binding = 3, offset = 4) uniform atomic_uint particles_alive_in;
-layout(binding = 4, offset = 4) uniform atomic_uint particles_alive_out;
+layout(binding = 3, offset = 4) uniform atomic_uint num_particles_alive_in;
+layout(binding = 4, offset = 4) uniform atomic_uint num_particles_alive_out;
 
 
 layout(location = 0) uniform float dt;
@@ -37,7 +37,7 @@ const float bounce = 1.0;
 
 void main() {
     const uint thread_id = gl_GlobalInvocationID.x;
-    if(thread_id > config.max_particles) {
+    if(thread_id >= atomicCounter(num_particles_alive_in)) {
         return;
     }
 
@@ -85,6 +85,6 @@ void main() {
     particles_out[idx].pos = new_pos;
 
     // update alive
-    alive_next_particles_idx[atomicCounterIncrement(particles_alive_out)] = idx;
+    alive_next_particles_idx[atomicCounterIncrement(num_particles_alive_out)] = idx;
     
 }

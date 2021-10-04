@@ -21,6 +21,7 @@ set(COPY_DATA
 
     ${SHADER_PATH}/simpl.vert   ${SHADER_PATH}/simpl.frag
     ${SHADER_PATH}/advect_particles.comp
+    ${SHADER_PATH}/simple_spawner.comp
 
     ${SHADER_INCLUDE_PATH}/particle_types.in
 )

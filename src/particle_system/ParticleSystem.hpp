@@ -30,6 +30,7 @@ private:
 	uint32_t m_draw_indirect_buffers[2];
 
 	ShaderProgram m_advect_compute_program;
+	ShaderProgram m_simple_spawner_program;
 
 	ParticleSystemConfig m_system_config;
 	uint32_t m_system_config_bo;

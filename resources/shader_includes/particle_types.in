@@ -20,7 +20,7 @@ struct ParticleSystemConfig {
 
 struct Particle {
     ALIGN(16) VEC3 pos;
-    float size;
+    float lifetime;
 };
 
 #ifdef __cplusplus
