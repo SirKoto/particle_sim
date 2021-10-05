@@ -3,32 +3,32 @@ layout(local_size_x = 32, local_size_y = 1) in;
 
 #include "../shader_includes/particle_types.in"
 
-layout(std430, binding = 0) buffer ConfigData{
+layout(std430, binding = BINDING_SYSTEM_CONFIG) buffer ConfigData{
     ParticleSystemConfig config;
 };
 
-layout(std430, binding = 1) buffer ParticleDataIn
+layout(std430, binding = BINDING_PARTICLES_IN) buffer ParticleDataIn
 {
     Particle particles_in[];
 };
 
-layout(std430, binding = 2) buffer ParticleDataOut
+layout(std430, binding = BINDING_PARTICLES_OUT) buffer ParticleDataOut
 {
     Particle particles_out[];
 };
 
-layout(std430, binding = 5) buffer ParticleIndicesAlive
+layout(std430, binding = BINDING_ALIVE_IN) buffer ParticleIndicesAlive
 {
     uint alive_particles_idx[];
 };
 
-layout(std430, binding = 6) buffer ParticleIndicesAliveNext
+layout(std430, binding = BINDING_ALIVE_OUT) buffer ParticleIndicesAliveNext
 {
     uint alive_next_particles_idx[];
 };
 
-layout(binding = 3, offset = 4) uniform atomic_uint num_particles_alive_in;
-layout(binding = 4, offset = 4) uniform atomic_uint num_particles_alive_out;
+layout(binding = BINDING_INDIRECT_IN, offset = 4) uniform atomic_uint num_particles_alive_in;
+layout(binding = BINDING_INDIRECT_OUT, offset = 4) uniform atomic_uint num_particles_alive_out;
 
 
 layout(location = 0) uniform float dt;

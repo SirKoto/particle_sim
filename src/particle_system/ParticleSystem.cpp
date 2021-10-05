@@ -68,12 +68,12 @@ void ParticleSystem::update()
 {
 	// Bind in compute shader as bindings 1 and 2
 	// 1 is previous frame, and 2 is the next
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo_particle_buffers[m_flipflop_state]);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_vbo_particle_buffers[1 - m_flipflop_state]);
-	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 3, m_draw_indirect_buffers[m_flipflop_state]);
-	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 4, m_draw_indirect_buffers[1 - m_flipflop_state]);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_alive_particle_indices[m_flipflop_state]);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, m_alive_particle_indices[1 - m_flipflop_state]);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_IN, m_vbo_particle_buffers[m_flipflop_state]);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_OUT, m_vbo_particle_buffers[1 - m_flipflop_state]);
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_INDIRECT_IN, m_draw_indirect_buffers[m_flipflop_state]);
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_INDIRECT_OUT, m_draw_indirect_buffers[1 - m_flipflop_state]);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_ALIVE_IN, m_alive_particle_indices[m_flipflop_state]);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_ALIVE_OUT, m_alive_particle_indices[1 - m_flipflop_state]);
 
 	// Clear the atomic counter of alive particles
 	glInvalidateBufferSubData(m_draw_indirect_buffers[1 - m_flipflop_state],
@@ -142,7 +142,7 @@ void ParticleSystem::imgui_draw()
 	ImGui::Separator();
 	if (ImGui::TreeNode("Spawner Config")) {
 
-		ImGui::InputFloat("Particles/Second", &m_emmit_particles_per_second,1.0f, 10.0f);
+		ImGui::InputFloat("Particles/Second", &m_emmit_particles_per_second, 1.0f, 10.0f);
 
 		ImGui::TreePop();
 	}
@@ -206,7 +206,7 @@ void ParticleSystem::initialize_system()
 					dead_indices.data());
 			}
 	}
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_dead_particle_indices);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_DEAD, m_dead_particle_indices);
 
 	// Initialize particle buffers
 	for (uint32_t i = 0; i < 0; ++i) {
@@ -241,6 +241,6 @@ void ParticleSystem::update_sytem_config()
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_system_config_bo);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ParticleSystemConfig),
 		&m_system_config, GL_STATIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_system_config_bo);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SYSTEM_CONFIG, m_system_config_bo);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }

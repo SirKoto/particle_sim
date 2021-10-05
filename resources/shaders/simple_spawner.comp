@@ -3,33 +3,35 @@ layout(local_size_x = 32, local_size_y = 1) in;
 
 #include "../shader_includes/particle_types.in"
 
-layout(std430, binding = 0) buffer ConfigData {
+layout(std430, binding = BINDING_SYSTEM_CONFIG) buffer ConfigData {
     ParticleSystemConfig config;
 };
 
-layout(std430, binding = 1) buffer ParticleDataNow
+layout(std430, binding = BINDING_PARTICLES_IN) buffer ParticleDataNow
 {
     Particle particles_now[];
 };
 
-layout(std430, binding = 2) buffer ParticleDataPre
+layout(std430, binding = BINDING_PARTICLES_OUT) buffer ParticleDataPre
 {
     Particle particles_pre[];
 };
 
-layout(std430, binding = 5) buffer ParticleIndicesAlive
+layout(std430, binding = BINDING_ALIVE_IN) buffer ParticleIndicesAlive
 {
     uint alive_particles_idx[];
 };
 
-layout(std430, binding = 7) buffer ParticleIndicesdead
+layout(std430, binding = BINDING_DEAD) buffer ParticleIndicesdead
 {
     uint dead_particles_idx[];
 };
 
-layout(binding = 3, offset = 4) uniform atomic_uint num_particles_alive;
+layout(binding = BINDING_INDIRECT_IN, offset = 4) uniform atomic_uint num_particles_alive;
 
+layout(location = 0) uniform float time;
 layout(location = 1) uniform uint particles_to_instantiate;
+
 
 void main() {
     const uint thread_id = gl_GlobalInvocationID.x;

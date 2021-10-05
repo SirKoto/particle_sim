@@ -23,6 +23,25 @@ struct Particle {
     float lifetime;
 };
 
+struct ParticleSpawnerConfig {
+    ALIGN(16) VEC3 pos;
+};
+
+#define BINDING_SYSTEM_CONFIG (0)
+#define BINDING_PARTICLES_IN (1)
+#define BINDING_PARTICLES_OUT (2)
+#define BINDING_INDIRECT_IN (3)
+#define BINDING_INDIRECT_OUT (4)
+#define BINDING_ALIVE_IN (5)
+#define BINDING_ALIVE_OUT (6)
+#define BINDING_DEAD (7)
+
+
+
+
+
+
+
 #ifdef __cplusplus
     #undef VEC3
     #undef ALIGN
