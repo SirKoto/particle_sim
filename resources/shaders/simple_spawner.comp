@@ -29,12 +29,12 @@ layout(std430, binding = 7) buffer ParticleIndicesdead
 
 layout(binding = 3, offset = 4) uniform atomic_uint num_particles_alive;
 
-const uint max_particles_to_instantiate = 5;
+layout(location = 1) uniform uint particles_to_instantiate;
 
 void main() {
     const uint thread_id = gl_GlobalInvocationID.x;
     // Do not overcreate particles
-    if(thread_id >= max_particles_to_instantiate){
+    if(thread_id >= particles_to_instantiate){
         return;
     }
     const uint actual_particles_count = atomicCounter(num_particles_alive);

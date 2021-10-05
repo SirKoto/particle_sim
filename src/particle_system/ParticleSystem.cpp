@@ -83,9 +83,21 @@ void ParticleSystem::update()
 		offsetof(DrawElementsIndirectCommand, primCount),
 		sizeof(uint32_t), GL_RED, GL_FLOAT, nullptr);
 
-	m_simple_spawner_program.use_program();
-	glDispatchCompute(1, 1, 1);
-	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	uint32_t num_particles_to_instantiate;
+	{
+		m_accum_particles_emmited += m_emmit_particles_per_second * 
+			ImGui::GetIO().DeltaTime;
+		float floor_part = std::floor(m_accum_particles_emmited);
+		m_accum_particles_emmited -= floor_part;
+		num_particles_to_instantiate = static_cast<uint32_t>(floor_part);
+	}
+	if (num_particles_to_instantiate != 0) {
+		m_simple_spawner_program.use_program();
+		glUniform1ui(1, num_particles_to_instantiate);
+		glDispatchCompute(num_particles_to_instantiate / 32
+			+ (num_particles_to_instantiate % 32 == 0 ? 0 : 1), 1, 1);
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	}
 	// Start compute shader
 	m_advect_compute_program.use_program();
 	glUniform1f(0, std::min(ImGui::GetIO().DeltaTime, 1 / 60.0f));
@@ -126,6 +138,14 @@ void ParticleSystem::imgui_draw()
 	ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
 	ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0f, 0.0f, "%.5f");
 	ImGui::InputFloat("Bounciness", &m_system_config.bounce, 0.1f);
+
+	ImGui::Separator();
+	if (ImGui::TreeNode("Spawner Config")) {
+
+		ImGui::InputFloat("Particles/Second", &m_emmit_particles_per_second,1.0f, 10.0f);
+
+		ImGui::TreePop();
+	}
 
 	ImGui::Separator();
 
