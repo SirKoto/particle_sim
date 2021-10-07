@@ -16,6 +16,7 @@ struct ParticleSystemConfig {
     float simulation_space_size;
     float k_v;
     float bounce;
+    float padding[2];
 };
 
 struct Particle {
@@ -25,6 +26,7 @@ struct Particle {
 
 struct ParticleSpawnerConfig {
     ALIGN(16) VEC3 pos;
+    float mean_lifetime;
 };
 
 #define BINDING_SYSTEM_CONFIG (0)
@@ -35,11 +37,6 @@ struct ParticleSpawnerConfig {
 #define BINDING_ALIVE_IN (5)
 #define BINDING_ALIVE_OUT (6)
 #define BINDING_DEAD (7)
-
-
-
-
-
 
 
 #ifdef __cplusplus

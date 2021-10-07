@@ -5,6 +5,7 @@ layout(local_size_x = 32, local_size_y = 1) in;
 
 layout(std430, binding = BINDING_SYSTEM_CONFIG) buffer ConfigData {
     ParticleSystemConfig config;
+    ParticleSpawnerConfig spawn_config;
 };
 
 layout(std430, binding = BINDING_PARTICLES_IN) buffer ParticleDataNow
@@ -48,7 +49,10 @@ void main() {
     const uint new_part_idx_idx = atomicCounterIncrement(num_particles_alive);
     const uint new_part_idx = dead_particles_idx[config.max_particles - 1 - new_part_idx_idx];
     
-    particles_now[new_part_idx].pos = vec3(5.0) + vec3(0.3 * float(thread_id), 0.2 * float(thread_id), 0.0 );
+    Particle p;
+    p.pos = spawn_config.pos + vec3(0.3 * float(thread_id), 0.2 * float(thread_id), 0.0 );
+    p.lifetime = spawn_config.mean_lifetime;
+    particles_now[new_part_idx] = p;
     particles_pre[new_part_idx].pos = particles_now[new_part_idx].pos;
 
     alive_particles_idx[new_part_idx_idx] = new_part_idx;

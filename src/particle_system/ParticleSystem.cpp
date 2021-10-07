@@ -58,9 +58,19 @@ ParticleSystem::ParticleSystem()
 	m_system_config.simulation_space_size = 10.0f;
 	m_system_config.k_v = 0.9999f;
 	m_system_config.bounce = 0.5f;
-	glGenBuffers(1, &m_system_config_bo);
-	update_sytem_config();
 
+	m_spawner_config.pos = glm::vec3(5.0f);
+	m_spawner_config.mean_lifetime = 2.0f;
+	// Generate buffer config
+	glGenBuffers(1, &m_system_config_bo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_system_config_bo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(ParticleSystemConfig) + sizeof(ParticleSpawnerConfig),
+		nullptr, GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SYSTEM_CONFIG, m_system_config_bo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	update_sytem_config();
 	initialize_system();
 }
 
@@ -195,27 +205,9 @@ void ParticleSystem::initialize_system()
 			0, // offset
 			sizeof(uint32_t) * m_system_config.max_particles, // size
 			dead_indices.data());
-
-		// tmp: initialize alive particles (only first frame)
-		if (false) 
-			for (uint32_t i = 0; i < 1; ++i) {
-				glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_alive_particle_indices[i]);
-				glBufferSubData(GL_SHADER_STORAGE_BUFFER,
-					0, // offset
-					sizeof(uint32_t) * m_system_config.max_particles, // size
-					dead_indices.data());
-			}
 	}
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_DEAD, m_dead_particle_indices);
 
-	// Initialize particle buffers
-	for (uint32_t i = 0; i < 0; ++i) {
-		glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particle_buffers[i]);
-		glBufferSubData(GL_ARRAY_BUFFER,
-			0, // offset
-			sizeof(Particle) * m_system_config.max_particles, // size
-			particles.data());
-	}
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
@@ -238,9 +230,18 @@ void ParticleSystem::initialize_system()
 
 void ParticleSystem::update_sytem_config()
 {
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_system_config_bo);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ParticleSystemConfig),
-		&m_system_config, GL_STATIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SYSTEM_CONFIG, m_system_config_bo);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	glNamedBufferSubData(
+		m_system_config_bo, // buffer name
+		0, // offset
+		sizeof(ParticleSystemConfig),	// size
+		&m_system_config	// data
+	);
+	
+	glNamedBufferSubData(
+		m_system_config_bo, // buffer name
+		sizeof(ParticleSystemConfig), // offset
+		sizeof(ParticleSpawnerConfig),	// size
+		&m_spawner_config	// data
+	);
+
 }

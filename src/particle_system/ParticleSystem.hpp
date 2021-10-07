@@ -33,6 +33,7 @@ private:
 	ShaderProgram m_simple_spawner_program;
 
 	ParticleSystemConfig m_system_config;
+	ParticleSpawnerConfig m_spawner_config;
 	uint32_t m_system_config_bo;
 
 	float m_emmit_particles_per_second = 1.0f;
