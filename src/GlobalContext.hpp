@@ -31,6 +31,8 @@ private:
 	bool m_show_imgui_demo_window = false;
 	bool m_show_camera_window = false;
 
+	bool m_run_simulation = true;
+
 	ShaderProgram m_particle_draw_program;
 	ParticleSystem m_particle_sys;
 

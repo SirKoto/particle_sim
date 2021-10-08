@@ -26,8 +26,8 @@ layout(std430, binding = BINDING_ALIVE_LIST_OUT) buffer ParticleIndicesAlive
     uint alive_particles_idx[];
 };
 
-//out vec3 normWorld;
 //out vec2 uv;
+out vec3 normWorld;
 
 void main() {
     
@@ -55,6 +55,7 @@ void main() {
     */
     //vec4 posWorld = M * vec4(iPos, 1.0) + vec4(iOffsetXZ.x, 0, iOffsetXZ.y, 0);
     uint idx = alive_particles_idx[gl_InstanceID];
+    normWorld = iPos;
     gl_Position = PV * vec4(iPos * config.particle_size + particles[idx].pos, 1.0);
 
 }

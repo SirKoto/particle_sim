@@ -149,6 +149,7 @@ void ParticleSystem::imgui_draw()
 	ImGui::Text("Particle System Config");
 	update |= ImGui::InputFloat("Gravity", &m_system_config.gravity, 0.1f);
 	update |= ImGui::InputFloat("Particle size", &m_system_config.particle_size, 0.1f);
+	m_system_config.particle_size = std::min(m_system_config.particle_size, 2.f);
 	update |= ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
 	update |= ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0f, 0.0f, "%.5f");
 	update |= ImGui::InputFloat("Bounciness", &m_system_config.bounce, 0.1f);

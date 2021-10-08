@@ -26,10 +26,13 @@ void GlobalContext::update()
     // update particle system from previous frame information
     // to use cpu time drawing the gui
     float time = (float)glfwGetTime();
-    m_particle_sys.update(time, ImGui::GetIO().DeltaTime);
+    if (m_run_simulation) {
+        m_particle_sys.update(time, ImGui::GetIO().DeltaTime);
+    }
 
     if (ImGui::BeginMainMenuBar())
     {
+        ImGui::Checkbox("Run Simulation", &m_run_simulation);
 
         if (ImGui::BeginMenu("Debug"))
         {
