@@ -17,18 +17,24 @@ layout(std430, binding = BINDING_PARTICLES_OUT) buffer ParticleDataOut
     Particle particles_out[];
 };
 
-layout(std430, binding = BINDING_ALIVE_IN) buffer ParticleIndicesAlive
+layout(std430, binding = BINDING_ALIVE_LIST_IN) buffer ParticleIndicesAlive
 {
     uint alive_particles_idx[];
 };
 
-layout(std430, binding = BINDING_ALIVE_OUT) buffer ParticleIndicesAliveNext
+layout(std430, binding = BINDING_ALIVE_LIST_OUT) buffer ParticleIndicesAliveNext
 {
     uint alive_next_particles_idx[];
 };
 
-layout(binding = BINDING_INDIRECT_IN, offset = 4) uniform atomic_uint num_particles_alive_in;
-layout(binding = BINDING_INDIRECT_OUT, offset = 4) uniform atomic_uint num_particles_alive_out;
+layout(std430, binding = BINDING_DEAD_LIST) buffer ParticleIndicesDead
+{
+    uint dead_particles_idx[];
+};
+
+layout(binding = BINDING_ATOMIC_ALIVE_IN, offset = 4) uniform atomic_uint num_particles_alive_in;
+layout(binding = BINDING_ATOMIC_ALIVE_OUT, offset = 4) uniform atomic_uint num_particles_alive_out;
+layout(binding = BINDING_ATOMIC_DEAD) uniform atomic_uint num_particles_dead;
 
 
 layout(location = 0) uniform float dt;
@@ -42,6 +48,12 @@ void main() {
     }
 
     const uint idx = alive_particles_idx[thread_id];
+
+    if(particles_in[idx].lifetime <= 0.0) {
+        const uint dead_idx = atomicCounterIncrement(num_particles_dead);
+        dead_particles_idx[dead_idx] = idx;
+        return;
+    }
     // verlet solver
     const vec3 old_pos = particles_out[idx].pos;
     vec3 actual_pos = particles_in[idx].pos;
@@ -83,6 +95,10 @@ void main() {
 
     particles_in[idx].pos = actual_pos;
     particles_out[idx].pos = new_pos;
+    particles_out[idx].lifetime = particles_in[idx].lifetime - dt;
+    particles_in[idx].pos.x = idx;
+    particles_out[idx].pos.x = idx;
+
 
     // update alive
     alive_next_particles_idx[atomicCounterIncrement(num_particles_alive_out)] = idx;

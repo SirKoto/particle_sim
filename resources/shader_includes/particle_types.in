@@ -32,11 +32,14 @@ struct ParticleSpawnerConfig {
 #define BINDING_SYSTEM_CONFIG (0)
 #define BINDING_PARTICLES_IN (1)
 #define BINDING_PARTICLES_OUT (2)
-#define BINDING_INDIRECT_IN (3)
-#define BINDING_INDIRECT_OUT (4)
-#define BINDING_ALIVE_IN (5)
-#define BINDING_ALIVE_OUT (6)
-#define BINDING_DEAD (7)
+#define BINDING_ALIVE_LIST_IN (3)
+#define BINDING_ALIVE_LIST_OUT (4)
+#define BINDING_DEAD_LIST (5)
+
+#define BINDING_ATOMIC_ALIVE_IN (0)
+#define BINDING_ATOMIC_ALIVE_OUT (1)
+#define BINDING_ATOMIC_DEAD (2)
+
 
 
 #ifdef __cplusplus

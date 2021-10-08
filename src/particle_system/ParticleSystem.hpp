@@ -25,7 +25,7 @@ private:
 	bool m_flipflop_state = false;
 	uint32_t m_vbo_particle_buffers[2];
 	uint32_t m_alive_particle_indices[2];
-	uint32_t m_dead_particle_indices;
+	uint32_t m_dead_particle_indices, m_dead_particle_count;
 
 	uint32_t m_draw_indirect_buffers[2];
 

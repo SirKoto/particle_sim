@@ -16,12 +16,12 @@ layout(location = 0) in vec3 iPos;
 //layout(location = 0) uniform mat4 M;
 layout(location = 1) uniform mat4 PV;
 
-layout(std430, binding = 2) buffer ParticleDataOut
+layout(std430, binding = BINDING_PARTICLES_OUT) buffer ParticleDataOut
 {
     Particle particles[];
 };
 
-layout(std430, binding = 6) buffer ParticleIndicesAlive
+layout(std430, binding = BINDING_ALIVE_LIST_OUT) buffer ParticleIndicesAlive
 {
     uint alive_particles_idx[];
 };

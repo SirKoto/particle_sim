@@ -18,17 +18,19 @@ layout(std430, binding = BINDING_PARTICLES_OUT) buffer ParticleDataPre
     Particle particles_pre[];
 };
 
-layout(std430, binding = BINDING_ALIVE_IN) buffer ParticleIndicesAlive
+layout(std430, binding = BINDING_ALIVE_LIST_IN) buffer ParticleIndicesAlive
 {
     uint alive_particles_idx[];
 };
 
-layout(std430, binding = BINDING_DEAD) buffer ParticleIndicesdead
+
+layout(std430, binding = BINDING_DEAD_LIST) buffer ParticleIndicesDead
 {
     uint dead_particles_idx[];
 };
 
-layout(binding = BINDING_INDIRECT_IN, offset = 4) uniform atomic_uint num_particles_alive;
+layout(binding = BINDING_ATOMIC_ALIVE_IN, offset = 4) uniform atomic_uint num_particles_alive;
+layout(binding = BINDING_ATOMIC_DEAD) uniform atomic_uint num_particles_dead;
 
 layout(location = 0) uniform float time;
 layout(location = 1) uniform uint particles_to_instantiate;
@@ -47,7 +49,9 @@ void main() {
     }
 
     const uint new_part_idx_idx = atomicCounterIncrement(num_particles_alive);
-    const uint new_part_idx = dead_particles_idx[config.max_particles - 1 - new_part_idx_idx];
+    // const uint dead_part_idx_idx = config.max_particles - 1 - new_part_idx_idx;
+    const uint dead_part_idx_idx = atomicCounterDecrement(num_particles_dead);
+    const uint new_part_idx = dead_particles_idx[dead_part_idx_idx];
     
     Particle p;
     p.pos = spawn_config.pos + vec3(0.3 * float(thread_id), 0.2 * float(thread_id), 0.0 );

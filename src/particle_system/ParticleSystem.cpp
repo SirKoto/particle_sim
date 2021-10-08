@@ -35,6 +35,7 @@ ParticleSystem::ParticleSystem()
 	glGenBuffers(2, m_draw_indirect_buffers);
 	glGenBuffers(2, m_alive_particle_indices);
 	glGenBuffers(1, &m_dead_particle_indices);
+	glGenBuffers(1, &m_dead_particle_count);
 
 	for (uint32_t i = 0; i < 2; ++i) {
 		// Initialise indirect draw buffer, and bind in 3
@@ -79,16 +80,14 @@ void ParticleSystem::update()
 	// Bind in compute shader as bindings 1 and 2
 	// 1 is previous frame, and 2 is the next
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_IN, m_vbo_particle_buffers[m_flipflop_state]);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_OUT, m_vbo_particle_buffers[1 - m_flipflop_state]);
-	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_INDIRECT_IN, m_draw_indirect_buffers[m_flipflop_state]);
-	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_INDIRECT_OUT, m_draw_indirect_buffers[1 - m_flipflop_state]);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_ALIVE_IN, m_alive_particle_indices[m_flipflop_state]);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_ALIVE_OUT, m_alive_particle_indices[1 - m_flipflop_state]);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_OUT, m_vbo_particle_buffers[1 - (uint32_t)m_flipflop_state]);
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_ATOMIC_ALIVE_IN, m_draw_indirect_buffers[m_flipflop_state]);
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_ATOMIC_ALIVE_OUT, m_draw_indirect_buffers[1 - (uint32_t)m_flipflop_state]);
+	
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_ALIVE_LIST_IN, m_alive_particle_indices[m_flipflop_state]);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_ALIVE_LIST_OUT, m_alive_particle_indices[1 - (uint32_t)m_flipflop_state]);
 
 	// Clear the atomic counter of alive particles
-	glInvalidateBufferSubData(m_draw_indirect_buffers[1 - m_flipflop_state],
-		offsetof(DrawElementsIndirectCommand, primCount),
-		sizeof(uint32_t));
 	glClearNamedBufferSubData(m_draw_indirect_buffers[1 - m_flipflop_state], GL_R32F,
 		offsetof(DrawElementsIndirectCommand, primCount),
 		sizeof(uint32_t), GL_RED, GL_FLOAT, nullptr);
@@ -121,7 +120,7 @@ void ParticleSystem::update()
 
 void ParticleSystem::gl_render_particles() const
 {
-	glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 	glBindVertexArray(m_ico_draw_vao);
 
@@ -170,6 +169,9 @@ void ParticleSystem::imgui_draw()
 
 void ParticleSystem::initialize_system()
 {
+	// TODO
+	m_accum_particles_emmited = 1.0f;
+
 	m_flipflop_state = false;
 	std::vector<Particle> particles(m_system_config.max_particles, { glm::vec3(5.0f) });
 	for (uint32_t i = 0; i < m_system_config.max_particles; ++i) {
@@ -183,11 +185,14 @@ void ParticleSystem::initialize_system()
 			glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particle_buffers[i]);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * m_system_config.max_particles,
 				nullptr, GL_DYNAMIC_DRAW);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			// Reserve particle indices
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_alive_particle_indices[i]);
 			glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(uint32_t) * m_system_config.max_particles,
 				nullptr, GL_DYNAMIC_DRAW);
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 		}
+
 		
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_dead_particle_indices);
 		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(uint32_t) * m_system_config.max_particles,
@@ -205,10 +210,15 @@ void ParticleSystem::initialize_system()
 			0, // offset
 			sizeof(uint32_t) * m_system_config.max_particles, // size
 			dead_indices.data());
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	}
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_DEAD, m_dead_particle_indices);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_DEAD_LIST, m_dead_particle_indices);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_dead_particle_count);
+	glNamedBufferData(m_dead_particle_count, sizeof(uint32_t), &m_system_config.max_particles, GL_STATIC_DRAW);
+	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_ATOMIC_DEAD, m_dead_particle_count);
 
 
 	// Initialise indirect draw buffer, and bind in 3, to use the atomic counter to track the particles that are alive
@@ -216,7 +226,6 @@ void ParticleSystem::initialize_system()
 		glClearNamedBufferSubData(m_draw_indirect_buffers[i], GL_R32F,
 			offsetof(DrawElementsIndirectCommand, primCount),
 			sizeof(uint32_t), GL_RED, GL_FLOAT, nullptr);
-		glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 3 + i, m_draw_indirect_buffers[i]);
 	}
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
