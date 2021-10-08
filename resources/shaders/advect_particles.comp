@@ -39,8 +39,6 @@ layout(binding = BINDING_ATOMIC_DEAD) uniform atomic_uint num_particles_dead;
 
 layout(location = 0) uniform float dt;
 
-const float bounce = 1.0;
-
 void main() {
     const uint thread_id = gl_GlobalInvocationID.x;
     if(thread_id >= atomicCounter(num_particles_alive_in)) {
@@ -96,8 +94,8 @@ void main() {
     particles_in[idx].pos = actual_pos;
     particles_out[idx].pos = new_pos;
     particles_out[idx].lifetime = particles_in[idx].lifetime - dt;
-    particles_in[idx].pos.x = idx;
-    particles_out[idx].pos.x = idx;
+    //particles_in[idx].pos.x = idx;
+    //particles_out[idx].pos.x = idx;
 
 
     // update alive

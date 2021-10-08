@@ -12,7 +12,7 @@ public:
 	ParticleSystem(const ParticleSystem&) = delete;
 	ParticleSystem& operator=(const ParticleSystem&) = delete;
 
-	void update();
+	void update(float time, float dt);
 
 	void gl_render_particles() const;
 

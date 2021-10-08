@@ -5,6 +5,7 @@
 #include <array>
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <GLFW/glfw3.h>
 
 #include <particle_types.in>
 
@@ -24,7 +25,8 @@ void GlobalContext::update()
 {
     // update particle system from previous frame information
     // to use cpu time drawing the gui
-    m_particle_sys.update();
+    float time = (float)glfwGetTime();
+    m_particle_sys.update(time, ImGui::GetIO().DeltaTime);
 
     if (ImGui::BeginMainMenuBar())
     {

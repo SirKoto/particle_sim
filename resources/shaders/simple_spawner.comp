@@ -3,6 +3,8 @@ layout(local_size_x = 32, local_size_y = 1) in;
 
 #include "../shader_includes/particle_types.in"
 
+#define M_PI 3.1415926535897932384626433832795
+
 layout(std430, binding = BINDING_SYSTEM_CONFIG) buffer ConfigData {
     ParticleSystemConfig config;
     ParticleSpawnerConfig spawn_config;
@@ -33,8 +35,12 @@ layout(binding = BINDING_ATOMIC_ALIVE_IN, offset = 4) uniform atomic_uint num_pa
 layout(binding = BINDING_ATOMIC_DEAD) uniform atomic_uint num_particles_dead;
 
 layout(location = 0) uniform float time;
-layout(location = 1) uniform uint particles_to_instantiate;
+layout(location = 1) uniform float dt;
+layout(location = 2) uniform uint particles_to_instantiate;
 
+float rand(vec2 co){
+    return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
 
 void main() {
     const uint thread_id = gl_GlobalInvocationID.x;
@@ -53,11 +59,24 @@ void main() {
     const uint dead_part_idx_idx = atomicCounterDecrement(num_particles_dead);
     const uint new_part_idx = dead_particles_idx[dead_part_idx_idx];
     
+
+    // Fountain Spawner
+    const float tidf = float(thread_id);
+    const float alpha = 2.0 * M_PI * (rand(vec2(time, 0.1 + tidf)) - 0.5);
+    const float beta = 0.5 * M_PI * (rand(vec2(time, 0.2 + tidf)));
+    const vec3 p_pos = vec3(cos(alpha) * cos(beta), sin(beta), sin(alpha) * cos(beta));
+
     Particle p;
-    p.pos = spawn_config.pos + vec3(0.3 * float(thread_id), 0.2 * float(thread_id), 0.0 );
+    p.pos = spawn_config.pos + p_pos;
     p.lifetime = spawn_config.mean_lifetime;
+    if(spawn_config.var_lifetime != 0.0) {
+        p.lifetime += spawn_config.var_lifetime * 
+            (2.0 * rand(vec2(time, tidf)) - 1.0);
+    }
     particles_now[new_part_idx] = p;
-    particles_pre[new_part_idx].pos = particles_now[new_part_idx].pos;
+    // Only need to update the previous position
+    const vec3 vel = p_pos * spawn_config.particle_speed;
+    particles_pre[new_part_idx].pos = p.pos - dt * vel;
 
     alive_particles_idx[new_part_idx_idx] = new_part_idx;
 }

@@ -62,6 +62,9 @@ ParticleSystem::ParticleSystem()
 
 	m_spawner_config.pos = glm::vec3(5.0f);
 	m_spawner_config.mean_lifetime = 2.0f;
+	m_spawner_config.var_lifetime = 1.0f;
+	m_spawner_config.particle_speed = 5.f;
+
 	// Generate buffer config
 	glGenBuffers(1, &m_system_config_bo);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_system_config_bo);
@@ -75,7 +78,7 @@ ParticleSystem::ParticleSystem()
 	initialize_system();
 }
 
-void ParticleSystem::update()
+void ParticleSystem::update(float time, float dt)
 {
 	// Bind in compute shader as bindings 1 and 2
 	// 1 is previous frame, and 2 is the next
@@ -94,22 +97,23 @@ void ParticleSystem::update()
 
 	uint32_t num_particles_to_instantiate;
 	{
-		m_accum_particles_emmited += m_emmit_particles_per_second * 
-			ImGui::GetIO().DeltaTime;
+		m_accum_particles_emmited += m_emmit_particles_per_second * dt;
 		float floor_part = std::floor(m_accum_particles_emmited);
 		m_accum_particles_emmited -= floor_part;
 		num_particles_to_instantiate = static_cast<uint32_t>(floor_part);
 	}
 	if (num_particles_to_instantiate != 0) {
 		m_simple_spawner_program.use_program();
-		glUniform1ui(1, num_particles_to_instantiate);
+		glUniform1f(0, time);
+		glUniform1f(1, std::min(dt, 1 / 60.0f));
+		glUniform1ui(2, num_particles_to_instantiate);
 		glDispatchCompute(num_particles_to_instantiate / 32
 			+ (num_particles_to_instantiate % 32 == 0 ? 0 : 1), 1, 1);
 		glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	}
 	// Start compute shader
 	m_advect_compute_program.use_program();
-	glUniform1f(0, std::min(ImGui::GetIO().DeltaTime, 1 / 60.0f));
+	glUniform1f(0, std::min(dt, 1 / 60.0f));
 	glDispatchCompute(m_system_config.max_particles / 32
 		+ (m_system_config.max_particles % 32 == 0 ? 0 : 1)
 		, 1, 1);
@@ -139,28 +143,42 @@ void ParticleSystem::gl_render_particles() const
 
 void ParticleSystem::imgui_draw()
 {
+	bool update = false;
+
 	ImGui::PushID("Particlesystem");
 	ImGui::Text("Particle System Config");
-	ImGui::InputScalar("Max particles", ImGuiDataType_U32, &m_system_config.max_particles);
-	ImGui::InputFloat("Gravity", &m_system_config.gravity, 0.1f);
-	ImGui::InputFloat("Particle size", &m_system_config.particle_size, 0.1f);
-	ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
-	ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0f, 0.0f, "%.5f");
-	ImGui::InputFloat("Bounciness", &m_system_config.bounce, 0.1f);
+	update |= ImGui::InputFloat("Gravity", &m_system_config.gravity, 0.1f);
+	update |= ImGui::InputFloat("Particle size", &m_system_config.particle_size, 0.1f);
+	update |= ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
+	update |= ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0f, 0.0f, "%.5f");
+	update |= ImGui::InputFloat("Bounciness", &m_system_config.bounce, 0.1f);
 
 	ImGui::Separator();
 	if (ImGui::TreeNode("Spawner Config")) {
-
 		ImGui::InputFloat("Particles/Second", &m_emmit_particles_per_second, 1.0f, 10.0f);
+
+
+		update |= ImGui::InputFloat3("Position", &m_spawner_config.pos.x);
+		
+		update |= ImGui::InputFloat("Particle Speed", &m_spawner_config.particle_speed, 0.2f);
+
+		update |= ImGui::InputFloat("Mean lifetime", &m_spawner_config.mean_lifetime, 0.2f);
+		update |= ImGui::InputFloat("Var lifetime", &m_spawner_config.var_lifetime, 0.2f);
+
+
+		
 
 		ImGui::TreePop();
 	}
 
 	ImGui::Separator();
-
-	if (ImGui::Button("Commit config")) {
+	ImGui::TextDisabled("Config system limit. Needs to reset simulation");
+	bool reset = ImGui::InputScalar("Max particles", ImGuiDataType_U32, &m_system_config.max_particles);
+	if (reset || ImGui::Button("Reset simulation")) {
 		update_sytem_config();
 		initialize_system();
+	} else if (update) {
+		update_sytem_config();
 	}
 
 	ImGui::PopID();

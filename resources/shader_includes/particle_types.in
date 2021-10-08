@@ -27,6 +27,8 @@ struct Particle {
 struct ParticleSpawnerConfig {
     ALIGN(16) VEC3 pos;
     float mean_lifetime;
+    float var_lifetime;
+    float particle_speed;
 };
 
 #define BINDING_SYSTEM_CONFIG (0)
