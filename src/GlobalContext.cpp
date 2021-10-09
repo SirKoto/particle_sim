@@ -11,7 +11,8 @@
 
 GlobalContext::GlobalContext() {
 
-    const std::filesystem::path shad_dir = std::filesystem::path(PROJECT_DIR) / "resources/shaders";
+    const std::filesystem::path proj_dir(PROJECT_DIR);
+    const std::filesystem::path shad_dir = proj_dir / "resources/shaders";
 
     std::array<Shader, 2> particle_shaders = { 
         Shader((shad_dir / "simpl.vert"), Shader::Type::Vertex ),
@@ -20,8 +21,21 @@ GlobalContext::GlobalContext() {
 
     m_particle_draw_program = ShaderProgram(particle_shaders.data(), (uint32_t)particle_shaders.size());
 
+    m_sphere_mesh = TriangleMesh(proj_dir / "resources/ply/sphere.ply");
+    m_sphere_mesh.upload_to_gpu();
+    std::array<Shader, 2> sphere_shaders = {
+        Shader((shad_dir / "sphere.vert"), Shader::Type::Vertex),
+        Shader((shad_dir / "sphere.frag"), Shader::Type::Fragment)
+    };
+    m_sphere_draw_program = ShaderProgram(sphere_shaders.data(), (uint32_t)sphere_shaders.size());
+    m_sphere_pos = glm::vec3(5.0f, 0.0f, 5.0f);
+    m_sphere_radius = 2.0f;
+    glGenVertexArrays(1, &m_sphere_vao);
+    glBindVertexArray(m_sphere_vao);
+    m_sphere_mesh.gl_bind_to_vao();
+    glBindVertexArray(0);
     // TODO: remove this
-    m_particle_sys.set_sphere(glm::vec3(5.0f, 0.0f, 5.0f), 5.0f);
+    m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
 }
 
 void GlobalContext::update()
@@ -75,10 +89,20 @@ void GlobalContext::update()
 
 void GlobalContext::render()
 {
+    m_sphere_draw_program.use_program();
+    glBindVertexArray(m_sphere_vao);
+    glUniform3fv(0, 1, &m_sphere_pos.x);
+    glUniform1f(1, m_sphere_radius);
+    glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
+    glDrawElements(GL_TRIANGLES,
+        3 * (GLsizei)m_sphere_mesh.get_faces().size(),
+        GL_UNSIGNED_INT, (void*)0);
+    
     m_particle_draw_program.use_program();
     glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
 
     m_particle_sys.gl_render_particles();
-
+    
     glUseProgram(0);
+    assert(glGetError() == GL_NO_ERROR);
 }

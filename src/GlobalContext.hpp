@@ -36,5 +36,11 @@ private:
 	ShaderProgram m_particle_draw_program;
 	ParticleSystem m_particle_sys;
 
+	uint32_t m_sphere_vao;
+	ShaderProgram m_sphere_draw_program;
+	TriangleMesh m_sphere_mesh;
+	glm::vec3 m_sphere_pos;
+	float m_sphere_radius;
+
 };
 

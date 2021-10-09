@@ -18,8 +18,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${SHADER_INCLUDE_PATH})
 
 set(COPY_DATA
     ${PLY_PATH}/icosahedron.ply
+    ${PLY_PATH}/sphere.ply
 
     ${SHADER_PATH}/simpl.vert   ${SHADER_PATH}/simpl.frag
+    ${SHADER_PATH}/sphere.vert   ${SHADER_PATH}/sphere.frag
     ${SHADER_PATH}/advect_particles.comp
     ${SHADER_PATH}/simple_spawner.comp
 
