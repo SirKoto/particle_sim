@@ -36,6 +36,7 @@ ParticleSystem::ParticleSystem()
 	glGenBuffers(2, m_alive_particle_indices);
 	glGenBuffers(1, &m_dead_particle_indices);
 	glGenBuffers(1, &m_dead_particle_count);
+	glGenBuffers(1, &m_sphere_ssb);
 
 	for (uint32_t i = 0; i < 2; ++i) {
 		// Initialise indirect draw buffer, and bind in 3
@@ -76,6 +77,14 @@ ParticleSystem::ParticleSystem()
 
 	update_sytem_config();
 	initialize_system();
+
+	// Initialize shapes
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_sphere_ssb);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(Sphere),
+		nullptr, GL_STATIC_DRAW);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	remove_sphere();
 }
 
 void ParticleSystem::update(float time, float dt)
@@ -148,8 +157,8 @@ void ParticleSystem::imgui_draw()
 	ImGui::PushID("Particlesystem");
 	ImGui::Text("Particle System Config");
 	update |= ImGui::InputFloat("Gravity", &m_system_config.gravity, 0.1f);
-	update |= ImGui::InputFloat("Particle size", &m_system_config.particle_size, 0.1f);
-	m_system_config.particle_size = std::min(m_system_config.particle_size, 2.f);
+	update |= ImGui::InputFloat("Particle size", &m_system_config.particle_size, 0.01f);
+	m_system_config.particle_size = std::clamp(m_system_config.particle_size, 0.0f, 2.f);
 	update |= ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
 	update |= ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0f, 0.0f, "%.5f");
 	update |= ImGui::InputFloat("Bounciness", &m_system_config.bounce, 0.1f);
@@ -184,6 +193,27 @@ void ParticleSystem::imgui_draw()
 
 	ImGui::PopID();
 
+}
+
+void ParticleSystem::set_sphere(const glm::vec3& pos, float radius)
+{
+	if (!m_sphere) {
+		m_sphere = std::unique_ptr<Sphere>(new Sphere());
+	}
+	m_sphere->pos = pos;
+	m_sphere->radius = radius;
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_sphere_ssb);
+	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Sphere), m_sphere.get());
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+}
+
+void ParticleSystem::remove_sphere()
+{
+	m_intersect_sphere_enabled = false;
+	m_advect_compute_program.use_program();
+	glUniform1ui(1, 0);
 }
 
 void ParticleSystem::initialize_system()

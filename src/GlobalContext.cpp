@@ -19,6 +19,9 @@ GlobalContext::GlobalContext() {
     };
 
     m_particle_draw_program = ShaderProgram(particle_shaders.data(), (uint32_t)particle_shaders.size());
+
+    // TODO: remove this
+    m_particle_sys.set_sphere(glm::vec3(5.0f, 0.0f, 5.0f), 5.0f);
 }
 
 void GlobalContext::update()

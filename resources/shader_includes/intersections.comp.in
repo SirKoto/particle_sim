@@ -1,0 +1,64 @@
+#ifdef __cplusplus
+    #pragma once
+    #define VEC3 glm::vec3
+#else
+    #define uint32_t uint
+    #define VEC3 vec3
+#endif
+
+struct Sphere {
+    VEC3 pos;
+    float radius;
+};
+
+
+#ifndef __cplusplus
+bool quadratic_solve(in float a, in float b, in float c, out float t0_, out float t1_) {
+    const float discriminant = b * b - 4.0 * a * c;
+    if(discriminant <= 0.0) {
+        return false;
+    }
+
+    float root_discriminant = sqrt(discriminant);
+
+    float q;
+    if (b < 0.0) {
+        q = -0.5 * (b - root_discriminant);
+    } else {
+        q = -0.5 * (b + root_discriminant);
+    }
+
+    float t0 = q / a;
+    float t1 = c / q;
+
+    t0_ = min(t0, t1);
+    t1_ = max(t0, t1);
+}
+
+
+void intersect(in Sphere s, inout vec3 prev_pos_world, inout vec3 pos_world) {
+    // Move coordinate system and set center of sphere to origin
+    vec3 o = prev_pos_world - s.pos;
+    vec3 d = pos_world - prev_pos_world;
+    //Build spehre coefficients
+    float a = dot(d, d);
+    float b = 2.0 * dot(d, o);
+    float c = dot(o, o) - s.radius * s.radius;
+
+    float t0, t1;
+    if(quadratic_solve(a,b,c, t0, t1) && t0 > 0.0 && t0 <= 1.0) {
+        const vec3 intersection = o + t0 * d;
+        const vec3 n = normalize(intersection);
+        // The d of the plane is -radius
+        pos_world = pos_world - 2.0 * n * (dot(n, pos_world) - s.radius);
+        prev_pos_world = pos_world - d + 2.0 * n * (dot(n, d));
+    }
+}
+#endif
+
+#ifdef __cplusplus
+    #undef VEC3
+#else
+    #undef uint32_t
+    #undef VEC3
+#endif

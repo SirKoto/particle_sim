@@ -24,6 +24,7 @@ set(COPY_DATA
     ${SHADER_PATH}/simple_spawner.comp
 
     ${SHADER_INCLUDE_PATH}/particle_types.in
+    ${SHADER_INCLUDE_PATH}/intersections.comp.in
 )
 
 foreach(data ${COPY_DATA})

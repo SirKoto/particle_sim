@@ -3,6 +3,8 @@
 #include "graphics/ShaderProgram.hpp"
 #include "graphics/TriangleMesh.hpp"
 #include "particle_types.in"
+#include "intersections.comp.in"
+#include <memory>
 
 
 class ParticleSystem {
@@ -17,6 +19,9 @@ public:
 	void gl_render_particles() const;
 
 	void imgui_draw();
+
+	void set_sphere(const glm::vec3& pos, float radius);
+	void remove_sphere();
 
 private:
 	TriangleMesh m_ico_mesh;
@@ -39,6 +44,10 @@ private:
 	float m_emmit_particles_per_second = 1.0f;
 	float m_accum_particles_emmited = 0.0f;
 	uint32_t m_max_particles_in_buffers = 0;
+
+	uint32_t m_sphere_ssb;
+	bool m_intersect_sphere_enabled = false;
+	std::unique_ptr<Sphere> m_sphere;
 
 	void initialize_system();
 	void update_sytem_config();
