@@ -41,7 +41,7 @@ private:
 	ParticleSpawnerConfig m_spawner_config;
 	uint32_t m_system_config_bo;
 
-	float m_emmit_particles_per_second = 1.0f;
+	float m_emmit_particles_per_second = 10.0f;
 	float m_accum_particles_emmited = 0.0f;
 	uint32_t m_max_particles_in_buffers = 0;
 

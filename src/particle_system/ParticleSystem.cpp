@@ -54,7 +54,7 @@ ParticleSystem::ParticleSystem()
 	}
 
 	// Setup configuration
-	m_system_config.max_particles = 5;
+	m_system_config.max_particles = 500;
 	m_system_config.gravity = 9.8f;
 	m_system_config.particle_size = 1.0e-1f;
 	m_system_config.simulation_space_size = 10.0f;
@@ -157,27 +157,24 @@ void ParticleSystem::imgui_draw()
 
 	ImGui::PushID("Particlesystem");
 	ImGui::Text("Particle System Config");
-	update |= ImGui::InputFloat("Gravity", &m_system_config.gravity, 0.1f);
-	update |= ImGui::InputFloat("Particle size", &m_system_config.particle_size, 0.01f);
-	m_system_config.particle_size = std::clamp(m_system_config.particle_size, 0.0f, 2.f);
+	update |= ImGui::DragFloat("Gravity", &m_system_config.gravity, 0.1f);
+	update |= ImGui::DragFloat("Particle size", &m_system_config.particle_size, 0.01f, 0.0f, 2.0f);
 	update |= ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
-	update |= ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0f, 0.0f, "%.5f");
+	update |= ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0001f, 0.0f, "%.5f");
 	update |= ImGui::InputFloat("Bounciness", &m_system_config.bounce, 0.1f);
 
 	ImGui::Separator();
 	if (ImGui::TreeNode("Spawner Config")) {
-		ImGui::InputFloat("Particles/Second", &m_emmit_particles_per_second, 1.0f, 10.0f);
+		ImGui::DragFloat("Particles/Second", &m_emmit_particles_per_second, 1.0f, 10.0f);
 
 
-		update |= ImGui::InputFloat3("Position", &m_spawner_config.pos.x);
+		update |= ImGui::DragFloat3("Position", &m_spawner_config.pos.x, 0.1);
 		
-		update |= ImGui::InputFloat("Particle Speed", &m_spawner_config.particle_speed, 0.2f);
+		update |= ImGui::DragFloat("Particle Speed", &m_spawner_config.particle_speed, 0.2f, 0.0f, FLT_MAX);
 
-		update |= ImGui::InputFloat("Mean lifetime", &m_spawner_config.mean_lifetime, 0.2f);
-		update |= ImGui::InputFloat("Var lifetime", &m_spawner_config.var_lifetime, 0.2f);
+		update |= ImGui::DragFloat("Mean lifetime", &m_spawner_config.mean_lifetime, 0.2f, 0.0f, FLT_MAX);
+		update |= ImGui::DragFloat("Var lifetime", &m_spawner_config.var_lifetime, 0.2f, 0.0f, FLT_MAX);
 
-
-		
 
 		ImGui::TreePop();
 	}

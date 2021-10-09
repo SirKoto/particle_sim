@@ -79,6 +79,12 @@ void GlobalContext::update()
     if (m_scene_window) {
         if (ImGui::Begin("Scene", &m_scene_window)) {
             ImGui::Checkbox("Draw Sphere", &m_draw_sphere);
+            if (ImGui::DragFloat3("Position", &m_sphere_pos.x, 0.1f)) {
+                m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+            }
+            if (ImGui::DragFloat("Radius", &m_sphere_radius, 0.1f)) {
+                m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+            }
         }
         ImGui::End();
     }
