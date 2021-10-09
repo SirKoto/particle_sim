@@ -105,7 +105,7 @@ void ParticleSystem::update(float time, float dt)
 	if (num_particles_to_instantiate != 0) {
 		m_simple_spawner_program.use_program();
 		glUniform1f(0, time);
-		glUniform1f(1, std::min(dt, 1 / 60.0f));
+		glUniform1f(1, dt);
 		glUniform1ui(2, num_particles_to_instantiate);
 		glDispatchCompute(num_particles_to_instantiate / 32
 			+ (num_particles_to_instantiate % 32 == 0 ? 0 : 1), 1, 1);
@@ -113,7 +113,7 @@ void ParticleSystem::update(float time, float dt)
 	}
 	// Start compute shader
 	m_advect_compute_program.use_program();
-	glUniform1f(0, std::min(dt, 1 / 60.0f));
+	glUniform1f(0, dt);
 	glDispatchCompute(m_system_config.max_particles / 32
 		+ (m_system_config.max_particles % 32 == 0 ? 0 : 1)
 		, 1, 1);

@@ -6,6 +6,8 @@
 #include <imgui_impl_opengl3.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <thread>
+#include <chrono>
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -29,8 +31,17 @@ gl_message_callback(GLenum source,
 void main_loop(GLFWwindow* window) {
     bool show_demo_window = true;
     GlobalContext gc;
+    double prev_frame_time = glfwGetTime();
+    double max_fps = 120.0;
 
     while (!glfwWindowShouldClose(window)) {
+        double actual_frame_time = glfwGetTime();
+        while (actual_frame_time - prev_frame_time < 1.0 / max_fps) {
+            std::this_thread::sleep_for(std::chrono::nanoseconds(50));
+            actual_frame_time = glfwGetTime();
+        }
+        prev_frame_time = actual_frame_time;
+
         // Poll and handle events (inputs, window resize, etc.)
         glfwPollEvents();
 
@@ -48,6 +59,16 @@ void main_loop(GLFWwindow* window) {
                 }
                 ImGui::EndMenu();
             }
+
+            if (ImGui::BeginMenu("Debug"))
+            {
+                if (ImGui::InputDouble("Max FPS", &max_fps, 1.0)) {
+                    max_fps = std::clamp(max_fps, 1.0, 500.0);
+                }
+
+                ImGui::EndMenu();
+            }
+
             ImGui::EndMainMenuBar();
         }
 
