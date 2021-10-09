@@ -46,9 +46,10 @@ private:
 	uint32_t m_max_particles_in_buffers = 0;
 
 	uint32_t m_sphere_ssb;
-	bool m_intersect_sphere_enabled = false;
-	std::unique_ptr<Sphere> m_sphere;
+	bool m_intersect_sphere_enabled = true;
+	Sphere m_sphere;
 
 	void initialize_system();
 	void update_sytem_config();
+	void update_intersection_sphere();
 };

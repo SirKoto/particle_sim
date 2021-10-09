@@ -30,12 +30,14 @@ private:
 
 	bool m_show_imgui_demo_window = false;
 	bool m_show_camera_window = false;
+	bool m_scene_window = false;
 
 	bool m_run_simulation = true;
 
 	ShaderProgram m_particle_draw_program;
 	ParticleSystem m_particle_sys;
 
+	bool m_draw_sphere = true;
 	uint32_t m_sphere_vao;
 	ShaderProgram m_sphere_draw_program;
 	TriangleMesh m_sphere_mesh;

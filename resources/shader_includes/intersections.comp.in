@@ -33,6 +33,8 @@ bool quadratic_solve(in float a, in float b, in float c, out float t0_, out floa
 
     t0_ = min(t0, t1);
     t1_ = max(t0, t1);
+
+    return true;
 }
 
 
@@ -50,8 +52,8 @@ void intersect(in Sphere s, inout vec3 prev_pos_world, inout vec3 pos_world) {
         const vec3 intersection = o + t0 * d;
         const vec3 n = normalize(intersection);
         // The d of the plane is -radius
-        pos_world = pos_world - 2.0 * n * (dot(n, pos_world) - s.radius);
-        prev_pos_world = pos_world - d + 2.0 * n * (dot(n, d));
+        pos_world = pos_world - (1.0 + config.bounce) * n * (dot(n, pos_world - s.pos) - s.radius);
+        prev_pos_world = pos_world - d + (1.0 + config.bounce) * n * (dot(n, d));
     }
 }
 #endif

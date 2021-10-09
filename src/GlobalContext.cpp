@@ -51,8 +51,9 @@ void GlobalContext::update()
     {
         ImGui::Checkbox("Run Simulation", &m_run_simulation);
 
-        if (ImGui::BeginMenu("Debug"))
+        if (ImGui::BeginMenu("View"))
         {
+            ImGui::Checkbox("Scene info", &m_scene_window);
             ImGui::Checkbox("ImGui Demo Window", &m_show_imgui_demo_window);
             ImGui::Checkbox("Camera info", &m_show_camera_window);
 
@@ -75,6 +76,13 @@ void GlobalContext::update()
         ImGui::End();
     }
 
+    if (m_scene_window) {
+        if (ImGui::Begin("Scene", &m_scene_window)) {
+            ImGui::Checkbox("Draw Sphere", &m_draw_sphere);
+        }
+        ImGui::End();
+    }
+
     if (ImGui::Begin("Simulation Config")) {
 
         m_particle_sys.imgui_draw();
@@ -89,15 +97,16 @@ void GlobalContext::update()
 
 void GlobalContext::render()
 {
-    m_sphere_draw_program.use_program();
-    glBindVertexArray(m_sphere_vao);
-    glUniform3fv(0, 1, &m_sphere_pos.x);
-    glUniform1f(1, m_sphere_radius);
-    glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
-    glDrawElements(GL_TRIANGLES,
-        3 * (GLsizei)m_sphere_mesh.get_faces().size(),
-        GL_UNSIGNED_INT, (void*)0);
-    
+    if (m_draw_sphere) {
+        m_sphere_draw_program.use_program();
+        glBindVertexArray(m_sphere_vao);
+        glUniform3fv(0, 1, &m_sphere_pos.x);
+        glUniform1f(1, m_sphere_radius);
+        glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
+        glDrawElements(GL_TRIANGLES,
+            3 * (GLsizei)m_sphere_mesh.get_faces().size(),
+            GL_UNSIGNED_INT, (void*)0);
+    }
     m_particle_draw_program.use_program();
     glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
 

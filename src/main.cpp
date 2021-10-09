@@ -112,7 +112,7 @@ int main() {
             return 1;
         glfwMakeContextCurrent(window);
         
-        // glfwSwapInterval(0); // Disable vsync
+        glfwSwapInterval(0); // Disable vsync
 
         bool err = gladLoadGL() == 0;
         if (err)

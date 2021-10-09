@@ -2,11 +2,13 @@
 layout(local_size_x = 32, local_size_y = 1) in;
 
 #include "../shader_includes/particle_types.in"
-#include "../shader_includes/intersections.comp.in"
 
 layout(std430, binding = BINDING_SYSTEM_CONFIG) buffer ConfigData{
     ParticleSystemConfig config;
 };
+
+#include "../shader_includes/intersections.comp.in"
+
 
 layout(std430, binding = BINDING_PARTICLES_IN) buffer ParticleDataIn
 {
@@ -40,7 +42,6 @@ layout(std430, binding = BINDING_SHAPE_SPHERE) buffer ShapeSphere {
 layout(binding = BINDING_ATOMIC_ALIVE_IN, offset = 4) uniform atomic_uint num_particles_alive_in;
 layout(binding = BINDING_ATOMIC_ALIVE_OUT, offset = 4) uniform atomic_uint num_particles_alive_out;
 layout(binding = BINDING_ATOMIC_DEAD) uniform atomic_uint num_particles_dead;
-
 
 layout(location = 0) uniform float dt;
 layout(location = 1) uniform uint intersect_sphere;

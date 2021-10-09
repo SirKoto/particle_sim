@@ -84,7 +84,8 @@ ParticleSystem::ParticleSystem()
 		sizeof(Sphere),
 		nullptr, GL_STATIC_DRAW);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-	remove_sphere();
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SHAPE_SPHERE, m_sphere_ssb);
+	update_intersection_sphere();
 }
 
 void ParticleSystem::update(float time, float dt)
@@ -191,29 +192,29 @@ void ParticleSystem::imgui_draw()
 		update_sytem_config();
 	}
 
+	ImGui::Separator();
+	if (ImGui::Checkbox("Sphere collisions", &m_intersect_sphere_enabled)) {
+		update_intersection_sphere();
+	}
+
 	ImGui::PopID();
 
 }
 
 void ParticleSystem::set_sphere(const glm::vec3& pos, float radius)
 {
-	if (!m_sphere) {
-		m_sphere = std::unique_ptr<Sphere>(new Sphere());
-	}
-	m_sphere->pos = pos;
-	m_sphere->radius = radius;
+	m_sphere.pos = pos;
+	m_sphere.radius = radius;
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_sphere_ssb);
-	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Sphere), m_sphere.get());
+	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Sphere), &m_sphere);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
 }
 
 void ParticleSystem::remove_sphere()
 {
 	m_intersect_sphere_enabled = false;
-	m_advect_compute_program.use_program();
-	glUniform1ui(1, 0);
+	update_intersection_sphere();
 }
 
 void ParticleSystem::initialize_system()
@@ -302,4 +303,16 @@ void ParticleSystem::update_sytem_config()
 		&m_spawner_config	// data
 	);
 
+}
+
+void ParticleSystem::update_intersection_sphere()
+{
+	m_advect_compute_program.use_program();
+	if (m_intersect_sphere_enabled) {
+		glUniform1ui(1, 1);
+	}
+	else {
+		glUniform1ui(1, 0);
+	}
+	glUseProgram(0);
 }
