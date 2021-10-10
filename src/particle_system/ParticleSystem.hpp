@@ -48,7 +48,7 @@ private:
 	uint32_t m_max_particles_in_buffers = 0;
 
 	uint32_t m_sphere_ssb;
-	bool m_intersect_sphere_enabled = false;
+	bool m_intersect_sphere_enabled = true;
 	Sphere m_sphere;
 
 	bool m_intersect_mesh_enabled = true;

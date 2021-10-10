@@ -37,16 +37,20 @@ private:
 	ShaderProgram m_particle_draw_program;
 	ParticleSystem m_particle_sys;
 
-	bool m_draw_sphere = false;
+	bool m_draw_sphere = true;
 	uint32_t m_sphere_vao;
 	ShaderProgram m_sphere_draw_program;
 	TriangleMesh m_sphere_mesh;
-	glm::vec3 m_sphere_pos;
-	float m_sphere_radius;
+	glm::vec3 m_sphere_pos = glm::vec3(0.0f, 2.f, 5.0f);
+	float m_sphere_radius = 2.0f;
 
 	bool m_draw_mesh = true;
 	uint32_t m_mesh_vao;
 	TriangleMesh m_mesh_mesh;
 	ShaderProgram m_mesh_draw_program;
+	glm::vec3 m_mesh_translation = glm::vec3(5.0f, 0.0f, 5.0f);
+	float m_mesh_scale = 2.0f;
+	glm::mat4 get_mesh_transform() const;
+	void update_uniform_mesh() const;
 };
 

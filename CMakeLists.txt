@@ -22,6 +22,7 @@ set(COPY_DATA
 
     ${SHADER_PATH}/simpl.vert   ${SHADER_PATH}/simpl.frag
     ${SHADER_PATH}/sphere.vert   ${SHADER_PATH}/sphere.frag
+    ${SHADER_PATH}/mesh.vert   ${SHADER_PATH}/mesh.frag
     ${SHADER_PATH}/advect_particles.comp
     ${SHADER_PATH}/simple_spawner.comp
 

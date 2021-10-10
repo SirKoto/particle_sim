@@ -28,16 +28,19 @@ GlobalContext::GlobalContext() {
         Shader((shad_dir / "sphere.frag"), Shader::Type::Fragment)
     };
     m_sphere_draw_program = ShaderProgram(sphere_shaders.data(), (uint32_t)sphere_shaders.size());
-    m_sphere_pos = glm::vec3(5.0f, 0.0f, 5.0f);
-    m_sphere_radius = 2.0f;
+    
     glGenVertexArrays(1, &m_sphere_vao);
     glBindVertexArray(m_sphere_vao);
     m_sphere_mesh.gl_bind_to_vao();
     glBindVertexArray(0);
 
+    std::array<Shader, 2> mesh_shaders = {
+        Shader((shad_dir / "mesh.vert"), Shader::Type::Vertex),
+        Shader((shad_dir / "mesh.frag"), Shader::Type::Fragment)
+    };
     m_mesh_mesh = TriangleMesh(proj_dir / "resources/ply/icosahedron.ply");
     m_mesh_mesh.upload_to_gpu();
-    m_mesh_draw_program = ShaderProgram(sphere_shaders.data(), (uint32_t)sphere_shaders.size());
+    m_mesh_draw_program = ShaderProgram(mesh_shaders.data(), (uint32_t)mesh_shaders.size());
     glGenVertexArrays(1, &m_mesh_vao);
     glBindVertexArray(m_mesh_vao);
     m_mesh_mesh.gl_bind_to_vao();
@@ -45,10 +48,8 @@ GlobalContext::GlobalContext() {
 
 
     // TODO: remove this
-    glm::mat4 t(1.0f);
-    t = glm::translate(t, m_sphere_pos);
-    t = glm::scale(t, glm::vec3(m_sphere_radius));
-    m_particle_sys.set_mesh(m_mesh_mesh, t);
+    update_uniform_mesh();
+    m_particle_sys.set_mesh(m_mesh_mesh, get_mesh_transform());
 
 
     m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
@@ -99,7 +100,7 @@ void GlobalContext::update()
 
         if (ImGui::Begin("Scene", &m_scene_window)) {
             ImGui::PushItemWidth(ImGui::GetFontSize() * -12);
-
+            ImGui::PushID("Sphere");
             ImGui::Checkbox("Draw Sphere", &m_draw_sphere);
             if (ImGui::DragFloat3("Position", &m_sphere_pos.x, 0.01f)) {
                 m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
@@ -107,9 +108,21 @@ void GlobalContext::update()
             if (ImGui::DragFloat("Radius", &m_sphere_radius, 0.01f)) {
                 m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
             }
-
+            ImGui::PopID();
             ImGui::Separator();
+            ImGui::PushID("Mesh");
             ImGui::Checkbox("Draw Mesh", &m_draw_mesh);
+            if (ImGui::DragFloat3("Position", &m_mesh_translation.x, 0.01f)) {
+                update_uniform_mesh();
+            }
+            if (ImGui::DragFloat("Scale", &m_mesh_scale, 0.01f)) {
+                update_uniform_mesh();
+            }
+            if (ImGui::Button("Send to simulator")) {
+                m_particle_sys.set_mesh(m_mesh_mesh, get_mesh_transform());
+            }
+
+            ImGui::PopID();
             ImGui::PopItemWidth();
         }
         ImGui::End();
@@ -144,10 +157,7 @@ void GlobalContext::render()
     if (m_draw_mesh) {
         m_mesh_draw_program.use_program();
         glBindVertexArray(m_mesh_vao);
-        // TODO: change this
-        glUniform3fv(0, 1, &m_sphere_pos.x);
-        glUniform1f(1, m_sphere_radius);
-        glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
         glDrawElements(GL_TRIANGLES,
             3 * (GLsizei)m_mesh_mesh.get_faces().size(),
             GL_UNSIGNED_INT, (void*)0);
@@ -161,4 +171,18 @@ void GlobalContext::render()
     
     glUseProgram(0);
     assert(glGetError() == GL_NO_ERROR);
+}
+
+glm::mat4 GlobalContext::get_mesh_transform() const
+{
+    glm::mat4 t(1.0f);
+    t = glm::translate(t, m_mesh_translation);
+    t = glm::scale(t, glm::vec3(m_mesh_scale));
+    return t;
+}
+
+void GlobalContext::update_uniform_mesh() const
+{
+    m_mesh_draw_program.use_program();
+    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(get_mesh_transform()));
 }
