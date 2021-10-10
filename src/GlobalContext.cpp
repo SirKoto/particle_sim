@@ -47,6 +47,7 @@ void GlobalContext::update()
         m_particle_sys.update(time, ImGui::GetIO().DeltaTime);
     }
 
+
     if (ImGui::BeginMainMenuBar())
     {
         ImGui::Checkbox("Run Simulation", &m_run_simulation);
@@ -65,6 +66,7 @@ void GlobalContext::update()
         ImGui::EndMainMenuBar();
     }
 
+
     if (m_show_imgui_demo_window) {
         ImGui::ShowDemoWindow(&m_show_imgui_demo_window);
     }
@@ -77,7 +79,11 @@ void GlobalContext::update()
     }
 
     if (m_scene_window) {
+        ImGui::SetNextWindowSize(ImVec2(250, 180), ImGuiCond_FirstUseEver);
+
         if (ImGui::Begin("Scene", &m_scene_window)) {
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -12);
+
             ImGui::Checkbox("Draw Sphere", &m_draw_sphere);
             if (ImGui::DragFloat3("Position", &m_sphere_pos.x, 0.1f)) {
                 m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
@@ -85,20 +91,22 @@ void GlobalContext::update()
             if (ImGui::DragFloat("Radius", &m_sphere_radius, 0.1f)) {
                 m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
             }
+            ImGui::PopItemWidth();
         }
         ImGui::End();
     }
 
     if (ImGui::Begin("Simulation Config")) {
-
+        ImGui::PushItemWidth(ImGui::GetFontSize() * -12);
         m_particle_sys.imgui_draw();
-
+        ImGui::PopItemWidth();
     }
-
     ImGui::End();
+
 
     // Camera update
     m_camera.update();
+
 }
 
 void GlobalContext::render()

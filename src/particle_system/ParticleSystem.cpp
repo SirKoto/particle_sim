@@ -168,9 +168,9 @@ void ParticleSystem::imgui_draw()
 		ImGui::DragFloat("Particles/Second", &m_emmit_particles_per_second, 1.0f, 10.0f);
 
 
-		update |= ImGui::DragFloat3("Position", &m_spawner_config.pos.x, 0.1);
+		update |= ImGui::DragFloat3("Position", &m_spawner_config.pos.x, 0.1f);
 		
-		update |= ImGui::DragFloat("Particle Speed", &m_spawner_config.particle_speed, 0.2f, 0.0f, FLT_MAX);
+		update |= ImGui::DragFloat("Initial Velocity", &m_spawner_config.particle_speed, 0.2f, 0.0f, FLT_MAX);
 
 		update |= ImGui::DragFloat("Mean lifetime", &m_spawner_config.mean_lifetime, 0.2f, 0.0f, FLT_MAX);
 		update |= ImGui::DragFloat("Var lifetime", &m_spawner_config.var_lifetime, 0.2f, 0.0f, FLT_MAX);
