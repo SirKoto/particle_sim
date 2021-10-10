@@ -12,7 +12,7 @@ public:
 	TriangleMesh(const std::filesystem::path& path);
 	~TriangleMesh();
 
-	TriangleMesh(const TriangleMesh&) = delete;
+	TriangleMesh(const TriangleMesh&);
 	TriangleMesh& operator=(const TriangleMesh&) = delete;
 	TriangleMesh& operator=(TriangleMesh&&);
 
@@ -35,6 +35,10 @@ public:
 	const std::vector<glm::uvec3>& get_faces() const {
 		return m_faces;
 	}
+
+	uint32_t get_vbo_vertices() const { return m_vbo_vertices; }
+	uint32_t get_vbo_indices() const { return m_vbo_indices; }
+
 
 private:
 

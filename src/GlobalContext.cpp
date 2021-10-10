@@ -34,7 +34,23 @@ GlobalContext::GlobalContext() {
     glBindVertexArray(m_sphere_vao);
     m_sphere_mesh.gl_bind_to_vao();
     glBindVertexArray(0);
+
+    m_mesh_mesh = TriangleMesh(proj_dir / "resources/ply/icosahedron.ply");
+    m_mesh_mesh.upload_to_gpu();
+    m_mesh_draw_program = ShaderProgram(sphere_shaders.data(), (uint32_t)sphere_shaders.size());
+    glGenVertexArrays(1, &m_mesh_vao);
+    glBindVertexArray(m_mesh_vao);
+    m_mesh_mesh.gl_bind_to_vao();
+    glBindVertexArray(0);
+
+
     // TODO: remove this
+    glm::mat4 t(1.0f);
+    t = glm::translate(t, m_sphere_pos);
+    t = glm::scale(t, glm::vec3(m_sphere_radius));
+    m_particle_sys.set_mesh(m_mesh_mesh, t);
+
+
     m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
 }
 
@@ -85,12 +101,15 @@ void GlobalContext::update()
             ImGui::PushItemWidth(ImGui::GetFontSize() * -12);
 
             ImGui::Checkbox("Draw Sphere", &m_draw_sphere);
-            if (ImGui::DragFloat3("Position", &m_sphere_pos.x, 0.1f)) {
+            if (ImGui::DragFloat3("Position", &m_sphere_pos.x, 0.01f)) {
                 m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
             }
-            if (ImGui::DragFloat("Radius", &m_sphere_radius, 0.1f)) {
+            if (ImGui::DragFloat("Radius", &m_sphere_radius, 0.01f)) {
                 m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
             }
+
+            ImGui::Separator();
+            ImGui::Checkbox("Draw Mesh", &m_draw_mesh);
             ImGui::PopItemWidth();
         }
         ImGui::End();
@@ -121,6 +140,20 @@ void GlobalContext::render()
             3 * (GLsizei)m_sphere_mesh.get_faces().size(),
             GL_UNSIGNED_INT, (void*)0);
     }
+
+    if (m_draw_mesh) {
+        m_mesh_draw_program.use_program();
+        glBindVertexArray(m_mesh_vao);
+        // TODO: change this
+        glUniform3fv(0, 1, &m_sphere_pos.x);
+        glUniform1f(1, m_sphere_radius);
+        glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
+        glDrawElements(GL_TRIANGLES,
+            3 * (GLsizei)m_mesh_mesh.get_faces().size(),
+            GL_UNSIGNED_INT, (void*)0);
+    }
+
+
     m_particle_draw_program.use_program();
     glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
 

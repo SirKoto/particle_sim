@@ -23,6 +23,8 @@ public:
 	void set_sphere(const glm::vec3& pos, float radius);
 	void remove_sphere();
 
+	void set_mesh(const TriangleMesh& mesh, const glm::mat4& transform);
+
 private:
 	TriangleMesh m_ico_mesh;
 	uint32_t m_ico_draw_vao;
@@ -46,10 +48,14 @@ private:
 	uint32_t m_max_particles_in_buffers = 0;
 
 	uint32_t m_sphere_ssb;
-	bool m_intersect_sphere_enabled = true;
+	bool m_intersect_sphere_enabled = false;
 	Sphere m_sphere;
+
+	bool m_intersect_mesh_enabled = true;
+	TriangleMesh m_intersect_mesh;
 
 	void initialize_system();
 	void update_sytem_config();
 	void update_intersection_sphere();
+	void update_intersection_mesh();
 };

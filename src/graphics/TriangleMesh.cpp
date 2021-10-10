@@ -18,7 +18,16 @@ TriangleMesh::TriangleMesh(const std::filesystem::path& path)
 
 TriangleMesh::~TriangleMesh()
 {
-	glDeleteBuffers(sizeof(m_vbos) / sizeof(*m_vbos), m_vbos);
+	if (m_vbo_vertices != 0) {
+		glDeleteBuffers(sizeof(m_vbos) / sizeof(*m_vbos), m_vbos);
+	}
+}
+
+TriangleMesh::TriangleMesh(const TriangleMesh& o)
+{
+	glGenBuffers(sizeof(m_vbos) / sizeof(*m_vbos), m_vbos);
+	m_vertices = o.m_vertices;
+	m_faces = o.m_faces;
 }
 
 TriangleMesh& TriangleMesh::operator=(TriangleMesh&& o)

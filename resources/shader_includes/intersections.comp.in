@@ -37,6 +37,10 @@ bool quadratic_solve(in float a, in float b, in float c, out float t0_, out floa
     return true;
 }
 
+float tetahedron_area(in vec3 v0, in vec3 v1, in vec3 v2) {
+    return length(cross(v1 - v0, v2 - v0));
+}
+
 
 void intersect(in Sphere s, inout vec3 prev_pos_world, inout vec3 pos_world) {
     // Move coordinate system and set center of sphere to origin
@@ -56,6 +60,26 @@ void intersect(in Sphere s, inout vec3 prev_pos_world, inout vec3 pos_world) {
         prev_pos_world = pos_world - d + (1.0 + config.bounce) * n * (dot(n, d));
     }
 }
+
+void intersect_tri(in vec3 v0, in vec3 v1, in vec3 v2, inout vec3 prev_pos_world, inout vec3 pos_world) {
+    vec3 n = normalize(cross(v1 - v0, v2 - v0));
+            float d = dot(n, v0);
+            if(sign(dot(n, prev_pos_world) - d) != sign(dot(n, pos_world) - d)) {
+                vec3 delta = pos_world - prev_pos_world;
+                float lambda = (d - dot(prev_pos_world, n)) / (dot(n, delta));
+                vec3 p = prev_pos_world + lambda * delta;
+                float a0 = tetahedron_area(p, v1, v2);
+                float a1 = tetahedron_area(v0, p, v2);
+                float a2 = tetahedron_area(v0, v1, p);
+                float a = tetahedron_area(v0, v1, v2);
+
+                if(a0 + a1 + a2 - a <= 1.0e-3) {
+                    pos_world = pos_world - (1.0 + config.bounce) * n * (dot(n, pos_world) - d);
+                    prev_pos_world = pos_world - delta + (1.0 + config.bounce) * n * (dot(n, delta));
+                }
+            }
+}
+
 #endif
 
 #ifdef __cplusplus

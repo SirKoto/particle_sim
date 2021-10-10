@@ -86,6 +86,7 @@ ParticleSystem::ParticleSystem()
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SHAPE_SPHERE, m_sphere_ssb);
 	update_intersection_sphere();
+	update_intersection_mesh();
 }
 
 void ParticleSystem::update(float time, float dt)
@@ -157,7 +158,7 @@ void ParticleSystem::imgui_draw()
 
 	ImGui::PushID("Particlesystem");
 	ImGui::Text("Particle System Config");
-	update |= ImGui::DragFloat("Gravity", &m_system_config.gravity, 0.1f);
+	update |= ImGui::DragFloat("Gravity", &m_system_config.gravity, 0.01f);
 	update |= ImGui::DragFloat("Particle size", &m_system_config.particle_size, 0.01f, 0.0f, 2.0f);
 	update |= ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
 	update |= ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0001f, 0.0f, "%.5f");
@@ -168,9 +169,9 @@ void ParticleSystem::imgui_draw()
 		ImGui::DragFloat("Particles/Second", &m_emmit_particles_per_second, 1.0f, 10.0f);
 
 
-		update |= ImGui::DragFloat3("Position", &m_spawner_config.pos.x, 0.1f);
+		update |= ImGui::DragFloat3("Position", &m_spawner_config.pos.x, 0.01f);
 		
-		update |= ImGui::DragFloat("Initial Velocity", &m_spawner_config.particle_speed, 0.2f, 0.0f, FLT_MAX);
+		update |= ImGui::DragFloat("Initial Velocity", &m_spawner_config.particle_speed, 0.02f, 0.0f, FLT_MAX);
 
 		update |= ImGui::DragFloat("Mean lifetime", &m_spawner_config.mean_lifetime, 0.2f, 0.0f, FLT_MAX);
 		update |= ImGui::DragFloat("Var lifetime", &m_spawner_config.var_lifetime, 0.2f, 0.0f, FLT_MAX);
@@ -193,6 +194,10 @@ void ParticleSystem::imgui_draw()
 	if (ImGui::Checkbox("Sphere collisions", &m_intersect_sphere_enabled)) {
 		update_intersection_sphere();
 	}
+	ImGui::Separator();
+	if (ImGui::Checkbox("Mesh collisions", &m_intersect_mesh_enabled)) {
+		update_intersection_mesh();
+	}
 
 	ImGui::PopID();
 
@@ -212,6 +217,16 @@ void ParticleSystem::remove_sphere()
 {
 	m_intersect_sphere_enabled = false;
 	update_intersection_sphere();
+}
+
+void ParticleSystem::set_mesh(const TriangleMesh& mesh, const glm::mat4& transform)
+{
+	m_intersect_mesh = TriangleMesh(mesh);
+	m_intersect_mesh.apply_transform(transform);
+	m_intersect_mesh.upload_to_gpu();
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_MESH_VERTICES, m_intersect_mesh.get_vbo_vertices());
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_MESH_INDICES, m_intersect_mesh.get_vbo_indices());
 }
 
 void ParticleSystem::initialize_system()
@@ -310,6 +325,18 @@ void ParticleSystem::update_intersection_sphere()
 	}
 	else {
 		glUniform1ui(1, 0);
+	}
+	glUseProgram(0);
+}
+
+void ParticleSystem::update_intersection_mesh()
+{
+	m_advect_compute_program.use_program();
+	if (m_intersect_mesh_enabled) {
+		glUniform1ui(2, 1);
+	}
+	else {
+		glUniform1ui(2, 0);
 	}
 	glUseProgram(0);
 }
