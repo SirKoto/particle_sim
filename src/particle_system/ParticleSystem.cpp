@@ -227,6 +227,8 @@ void ParticleSystem::set_mesh(const TriangleMesh& mesh, const glm::mat4& transfo
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_MESH_VERTICES, m_intersect_mesh.get_vbo_vertices());
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_MESH_INDICES, m_intersect_mesh.get_vbo_indices());
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_MESH_NORMALS, m_intersect_mesh.get_vbo_normals());
+
 }
 
 void ParticleSystem::initialize_system()

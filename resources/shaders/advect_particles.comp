@@ -44,7 +44,7 @@ layout(std430, binding = BINDING_MESH_VERTICES) buffer MeshVerts {
 };
 
 layout(std430, binding = BINDING_MESH_NORMALS) buffer MeshNorms {
-    vec3 mesh_normals[];
+    float mesh_normals[];
 };
 
 layout(std430, binding = BINDING_MESH_INDICES) buffer MeshIndices {
@@ -130,8 +130,10 @@ void main() {
                 mesh_vertices[3 * mesh_indices[i + 2] + 0],
                 mesh_vertices[3 * mesh_indices[i + 2] + 1],
                 mesh_vertices[3 * mesh_indices[i + 2] + 2]);
-            
-            intersect_tri(v0, v1, v2, actual_pos, new_pos);
+
+            vec3 n = normalize(cross(v1 - v0, v2 - v0));
+
+            intersect_tri(v0, v1, v2, n, actual_pos, new_pos);
         }
     }
 

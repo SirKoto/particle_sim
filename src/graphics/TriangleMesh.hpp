@@ -40,6 +40,7 @@ public:
 
 	uint32_t get_vbo_vertices() const { return m_vbo_vertices; }
 	uint32_t get_vbo_indices() const { return m_vbo_indices; }
+	uint32_t get_vbo_normals() const { return m_vbo_normals; }
 
 
 private:
@@ -48,6 +49,7 @@ private:
 
 	// Variables
 	std::vector<glm::vec3> m_vertices;
+	std::vector<glm::vec3> m_normals;
 	std::vector<glm::uvec3> m_faces;
 
 	union
@@ -55,8 +57,11 @@ private:
 		struct {
 			uint32_t m_vbo_vertices;
 			uint32_t m_vbo_indices;
+			uint32_t m_vbo_normals;
 		};
-		uint32_t m_vbos[2];
+		uint32_t m_vbos[3];
 	};
+
+	void generate_normals();
 };
 

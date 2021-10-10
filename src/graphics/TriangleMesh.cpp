@@ -23,6 +23,8 @@ TriangleMesh::TriangleMesh(
 	glGenBuffers(sizeof(m_vbos) / sizeof(*m_vbos), m_vbos);
 	m_faces = indices;
 	m_vertices = vertices;
+	
+	generate_normals();
 }
 
 TriangleMesh::~TriangleMesh()
@@ -37,6 +39,7 @@ TriangleMesh::TriangleMesh(const TriangleMesh& o)
 	glGenBuffers(sizeof(m_vbos) / sizeof(*m_vbos), m_vbos);
 	m_vertices = o.m_vertices;
 	m_faces = o.m_faces;
+	m_normals = o.m_normals;
 }
 
 TriangleMesh& TriangleMesh::operator=(TriangleMesh&& o)
@@ -50,6 +53,7 @@ TriangleMesh& TriangleMesh::operator=(TriangleMesh&& o)
 
 	m_vertices = std::move(o.m_vertices);
 	m_faces = std::move(o.m_faces);
+	m_normals = std::move(o.m_normals);
 
 	return *this;
 }
@@ -95,6 +99,12 @@ void TriangleMesh::upload_to_gpu(bool dynamic_verts, bool dynamic_indices)
 		m_vertices.data(),
 		dynamic_verts ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 
+	glBindBuffer(GL_ARRAY_BUFFER, m_vbo_normals);
+	glBufferData(GL_ARRAY_BUFFER,
+		m_normals.size() * sizeof(glm::vec3),
+		m_normals.data(),
+		dynamic_verts ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vbo_indices);
@@ -114,6 +124,11 @@ void TriangleMesh::gl_bind_to_vao() const
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_vbo_normals);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vbo_indices);
 
@@ -163,14 +178,15 @@ void TriangleMesh::parse_ply(const char* fileName)
 
 	// copy vertices
 	m_vertices.resize(vertices->count);
+	m_normals.resize(vertices->count);
 	for (size_t i = 0; i < vertices->count; ++i) {
 		std::memcpy(&m_vertices[i], vertices->buffer.get() + i * 3 * sizeof(float), 3 * sizeof(float));
 		//if (texcoords) {
 		//	std::memcpy(&(*outVertices)[i].texCoord, texcoords->buffer.get() + i * 2 * sizeof(float), 2 * sizeof(float));
 		//}
-		//if (normals) {
-		//	std::memcpy(&(*outVertices)[i].normal, normals->buffer.get() + i * 3 * sizeof(float), 3 * sizeof(float));
-		//}
+		if (normals) {
+			std::memcpy(&m_normals[i], normals->buffer.get() + i * 3 * sizeof(float), 3 * sizeof(float));
+		}
 	}
 
 	m_faces.resize(faces->count);
@@ -188,5 +204,52 @@ void TriangleMesh::parse_ply(const char* fileName)
 	}
 	else {
 		throw std::runtime_error("Error: Cant read face format");
+	}
+
+	if (!normals) {
+		generate_normals();
+	}
+}
+
+void TriangleMesh::generate_normals()
+{
+	m_normals.clear();
+	m_normals.resize(m_vertices.size());
+
+	// Compute the planes of all triangles
+	std::vector<glm::vec3> triangleNormals(m_faces.size());
+	for (uint32_t t = 0; t < (uint32_t)m_faces.size(); ++t) {
+		const glm::vec3& v0 = m_vertices[m_faces[t][0]];
+		const glm::vec3& v1 = m_vertices[m_faces[t][1]];
+		const glm::vec3& v2 = m_vertices[m_faces[t][2]];
+
+		glm::vec3 n = glm::cross(v1 - v0, v2 - v0);
+		triangleNormals[t] = glm::normalize(n);
+	}
+
+	// Compute V:{F}
+	std::vector<std::vector<uint32_t>> vert2faces(m_vertices.size());
+	std::vector<uint32_t> vertexArity(m_vertices.size(), 0);
+	for (uint32_t t = 0; t < (uint32_t)m_faces.size(); ++t) {
+		vertexArity[m_faces[t][0]] += 1;
+		vertexArity[m_faces[t][1]] += 1;
+		vertexArity[m_faces[t][2]] += 1;
+	}
+	for (uint32_t v = 0; v < (uint32_t)m_vertices.size(); ++v) {
+		vert2faces[v].reserve(vertexArity[v]);
+	}
+	for (uint32_t t = 0; t < (uint32_t)m_faces.size(); ++t) {
+		vert2faces[m_faces[t][0]].push_back(t);
+		vert2faces[m_faces[t][1]].push_back(t);
+		vert2faces[m_faces[t][2]].push_back(t);
+	}
+
+	for (uint32_t v = 0; v < (uint32_t)m_normals.size(); ++v) {
+		m_normals[v] = glm::vec3(0);
+
+		for (const uint32_t& f : vert2faces[v]) {
+			m_normals[v] += triangleNormals[f];
+		}
+		m_normals[v] /= vert2faces[v].size();
 	}
 }
