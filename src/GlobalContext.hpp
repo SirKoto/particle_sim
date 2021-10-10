@@ -50,6 +50,12 @@ private:
 	ShaderProgram m_mesh_draw_program;
 	glm::vec3 m_mesh_translation = glm::vec3(5.0f, 0.0f, 5.0f);
 	float m_mesh_scale = 2.0f;
+
+	bool m_draw_floor = true;
+	uint32_t m_floor_vao;
+	TriangleMesh m_floor_mesh;
+	ShaderProgram m_floor_draw_program;
+
 	glm::mat4 get_mesh_transform() const;
 	void update_uniform_mesh() const;
 };

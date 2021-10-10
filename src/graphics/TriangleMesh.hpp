@@ -10,6 +10,8 @@ class TriangleMesh {
 public:
 	TriangleMesh();
 	TriangleMesh(const std::filesystem::path& path);
+	TriangleMesh(const std::vector<glm::uvec3>& indices,
+		const std::vector<glm::vec3>& vertices);
 	~TriangleMesh();
 
 	TriangleMesh(const TriangleMesh&);

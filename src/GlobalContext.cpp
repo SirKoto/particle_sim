@@ -46,6 +46,18 @@ GlobalContext::GlobalContext() {
     m_mesh_mesh.gl_bind_to_vao();
     glBindVertexArray(0);
 
+    m_floor_mesh = TriangleMesh({ {0, 1, 2}, {0, 2, 3} },
+        { {0.f, 0.f, 0.f}, {0.f, 0.f, 1.f}, {1.f, 0.f, 1.f}, {1.f, 0.f, 0.f} });
+    m_floor_mesh.upload_to_gpu();
+    std::array<Shader, 2> floor_shaders = {
+        Shader((shad_dir / "floor.vert"), Shader::Type::Vertex),
+        Shader((shad_dir / "floor.frag"), Shader::Type::Fragment)
+    };
+    m_floor_draw_program = ShaderProgram(floor_shaders.data(), (uint32_t)floor_shaders.size());
+    glGenVertexArrays(1, &m_floor_vao);
+    glBindVertexArray(m_floor_vao);
+    m_floor_mesh.gl_bind_to_vao();
+    glBindVertexArray(0);
 
     // TODO: remove this
     update_uniform_mesh();
@@ -99,7 +111,7 @@ void GlobalContext::update()
         ImGui::SetNextWindowSize(ImVec2(250, 180), ImGuiCond_FirstUseEver);
 
         if (ImGui::Begin("Scene", &m_scene_window)) {
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -12);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -5);
             ImGui::PushID("Sphere");
             ImGui::Checkbox("Draw Sphere", &m_draw_sphere);
             if (ImGui::DragFloat3("Position", &m_sphere_pos.x, 0.01f)) {
@@ -121,9 +133,12 @@ void GlobalContext::update()
             if (ImGui::Button("Send to simulator")) {
                 m_particle_sys.set_mesh(m_mesh_mesh, get_mesh_transform());
             }
-
             ImGui::PopID();
+            ImGui::Separator();
+
+            ImGui::Checkbox("Draw floor", &m_draw_floor);
             ImGui::PopItemWidth();
+
         }
         ImGui::End();
     }
@@ -160,6 +175,16 @@ void GlobalContext::render()
         glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
         glDrawElements(GL_TRIANGLES,
             3 * (GLsizei)m_mesh_mesh.get_faces().size(),
+            GL_UNSIGNED_INT, (void*)0);
+    }
+
+    if (m_draw_floor) {
+        m_floor_draw_program.use_program();
+        glBindVertexArray(m_floor_vao);
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
+        glUniform1f(0, m_particle_sys.get_simulation_space_size());
+        glDrawElements(GL_TRIANGLES,
+            3 * (GLsizei)m_floor_mesh.get_faces().size(),
             GL_UNSIGNED_INT, (void*)0);
     }
 

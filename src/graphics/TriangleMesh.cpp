@@ -16,6 +16,15 @@ TriangleMesh::TriangleMesh(const std::filesystem::path& path)
 	glGenBuffers(sizeof(m_vbos) / sizeof(*m_vbos), m_vbos);
 }
 
+TriangleMesh::TriangleMesh(
+	const std::vector<glm::uvec3>& indices,
+	const std::vector<glm::vec3>& vertices)
+{
+	glGenBuffers(sizeof(m_vbos) / sizeof(*m_vbos), m_vbos);
+	m_faces = indices;
+	m_vertices = vertices;
+}
+
 TriangleMesh::~TriangleMesh()
 {
 	if (m_vbo_vertices != 0) {

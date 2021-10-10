@@ -25,6 +25,8 @@ public:
 
 	void set_mesh(const TriangleMesh& mesh, const glm::mat4& transform);
 
+	float get_simulation_space_size() const { return m_system_config.simulation_space_size;  }
+
 private:
 	TriangleMesh m_ico_mesh;
 	uint32_t m_ico_draw_vao;

@@ -130,6 +130,10 @@ int main() {
         glDebugMessageControl(GL_DONT_CARE, GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR, GL_DONT_CARE, 0, nullptr, true);
         glDebugMessageControl(GL_DONT_CARE, GL_DEBUG_TYPE_PERFORMANCE, GL_DONT_CARE, 0, nullptr, true);
 
+        // Cull back-faces
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
