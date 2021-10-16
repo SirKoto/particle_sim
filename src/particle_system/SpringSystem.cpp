@@ -32,6 +32,7 @@ SpringSystem::SpringSystem()
 	glGenBuffers(1, &m_system_config_bo);
 	glGenBuffers(1, &m_spring_indices_bo);
 	glGenBuffers(1, &m_sphere_ssb);
+	glGenBuffers(1, &m_forces_buffer);
 
 	glGenVertexArrays(1, &m_segment_vao);
 
@@ -67,6 +68,11 @@ void SpringSystem::update(float time, float dt)
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_IN, m_vbo_particle_buffers[m_flipflop_state]);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_OUT, m_vbo_particle_buffers[1 - m_flipflop_state]);
 
+	glClearNamedBufferSubData(m_forces_buffer, GL_R32F,
+		0, sizeof(glm::vec4) * m_system_config.num_particles, GL_RED, GL_FLOAT, nullptr);
+	
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
 	m_spring_force_program.use_program();
 	glUniform1f(0, dt);
 	glDispatchCompute(m_system_config.num_segments / 32
@@ -74,6 +80,7 @@ void SpringSystem::update(float time, float dt)
 		, 1, 1);
 
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
 	m_advect_particle_program.use_program();
 	glUniform1f(0, dt);
 	glDispatchCompute(m_system_config.num_particles / 32
@@ -136,7 +143,7 @@ void SpringSystem::reset_bindings() const
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_IN, m_vbo_particle_buffers[0]);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_OUT, m_vbo_particle_buffers[1]);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SEGMENT_INDICES, m_spring_indices_bo);
-
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_FORCES, m_forces_buffer);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SHAPE_SPHERE, m_sphere_ssb);
 }
 
@@ -182,6 +189,16 @@ void SpringSystem::initialize_system()
 		sizeof(glm::ivec2) * indices.size(),
 		indices.data(), GL_STATIC_DRAW);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+
+	// force buffers
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_forces_buffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(glm::vec4) * m_system_config.num_particles,
+		nullptr, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	glClearNamedBufferSubData(m_forces_buffer, GL_R32F,
+		0, sizeof(glm::vec4) * m_system_config.num_particles, GL_RED, GL_FLOAT, nullptr);
 
 	update_sytem_config();
 	reset_bindings();

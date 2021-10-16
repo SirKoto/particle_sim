@@ -31,6 +31,7 @@ private:
 	bool m_flipflop_state = false;
 	uint32_t m_vbo_particle_buffers[2];
 	uint32_t m_spring_indices_bo;
+	uint32_t m_forces_buffer;
 
 	ShaderProgram m_basic_draw_point;
 	ShaderProgram m_advect_particle_program;

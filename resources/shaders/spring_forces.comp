@@ -18,6 +18,11 @@ layout(std430, binding = BINDING_SEGMENT_INDICES) buffer SegmentsIndices
     uvec2 segments[];
 };
 
+layout(std430, binding = BINDING_FORCES) buffer Forces
+{
+    vec3 forces[];
+};
+
 layout(location = 0) uniform float dt;
 
 void main() {
@@ -26,6 +31,27 @@ void main() {
         return;
     }
 
-    atomicAdd(particles[segments[idx].x].pos.y,  0.1 * dt);
-    atomicAdd(particles[segments[idx].y].pos.y,  -0.1 * dt);
+    const uint i0 = segments[idx].x;
+    const uint i1 = segments[idx].y;
+
+    const vec3 p0 = particles[i0].pos;
+    const vec3 p1 = particles[i1].pos;
+    const vec3 dir_m = p1 - p0;
+    const float dist = length(dir_m);
+    const vec3 dir = dir_m / dist;
+    // Rest length of 1, and k of 20
+
+    const vec3 f0 = dir * (20 * (dist - 1.0));
+    const vec3 f1 = -f0;
+    
+    atomicAdd(forces[i0].x, f0.x);
+    atomicAdd(forces[i0].y, f0.y);
+    atomicAdd(forces[i0].z, f0.z);
+
+    atomicAdd(forces[i1].x, f1.x);
+    atomicAdd(forces[i1].y, f1.y);
+    atomicAdd(forces[i1].z, f1.z);
+
+    //atomicAdd(particles[segments[idx].x].pos.y,  0.1 * dt);
+    //atomicAdd(particles[segments[idx].y].pos.y,  -0.1 * dt);
 }

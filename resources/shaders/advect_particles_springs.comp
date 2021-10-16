@@ -20,6 +20,11 @@ layout(std430, binding = BINDING_PARTICLES_OUT) buffer ParticleDataOut
     Particle particles_out[];
 };
 
+layout(std430, binding = BINDING_FORCES) buffer Forces
+{
+    vec3 forces[];
+};
+
 layout(std430, binding = BINDING_SHAPE_SPHERE) buffer ShapeSphere {
     Sphere sphere;
 };
@@ -37,7 +42,12 @@ void main() {
     // verlet solver
     const vec3 old_pos = particles_out[idx].pos;
     vec3 actual_pos = particles_in[idx].pos;
-    vec3 new_pos = actual_pos + config.k_v * (actual_pos - old_pos) - vec3(0.0, dt * dt * config.gravity, 0.0);
+    vec3 new_pos = actual_pos 
+        + config.k_v * (actual_pos - old_pos) 
+        + dt * dt * (
+            vec3(0.0,  -config.gravity, 0.0) 
+            + forces[idx] / 1.0 // divide by mass
+            );
     
     // Colide against 5 walls
     // Bottom
