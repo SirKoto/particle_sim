@@ -24,11 +24,14 @@ set(COPY_DATA
     ${SHADER_PATH}/sphere.vert   ${SHADER_PATH}/sphere.frag
     ${SHADER_PATH}/mesh.vert   ${SHADER_PATH}/mesh.frag
     ${SHADER_PATH}/floor.vert   ${SHADER_PATH}/floor.frag
+    ${SHADER_PATH}/spring_point.vert   ${SHADER_PATH}/spring_point.frag
 
     ${SHADER_PATH}/advect_particles.comp
     ${SHADER_PATH}/simple_spawner.comp
+    ${SHADER_PATH}/advect_particles_springs.comp
 
     ${SHADER_INCLUDE_PATH}/particle_types.in
+    ${SHADER_INCLUDE_PATH}/spring_types.in
     ${SHADER_INCLUDE_PATH}/intersections.comp.in
 )
 

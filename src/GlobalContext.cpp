@@ -203,12 +203,13 @@ void GlobalContext::update()
 
 void GlobalContext::render()
 {
+    const glm::mat4 view_proj_mat = m_camera.getProjView();
     if (m_draw_sphere) {
         m_sphere_draw_program.use_program();
         glBindVertexArray(m_sphere_vao);
         glUniform3fv(0, 1, &m_sphere_pos.x);
         glUniform1f(1, m_sphere_radius);
-        glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
+        glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(view_proj_mat));
         glDrawElements(GL_TRIANGLES,
             3 * (GLsizei)m_sphere_mesh.get_faces().size(),
             GL_UNSIGNED_INT, (void*)0);
@@ -217,7 +218,7 @@ void GlobalContext::render()
     if (m_draw_mesh) {
         m_mesh_draw_program.use_program();
         glBindVertexArray(m_mesh_vao);
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view_proj_mat));
         glDrawElements(GL_TRIANGLES,
             3 * (GLsizei)m_mesh_mesh.get_faces().size(),
             GL_UNSIGNED_INT, (void*)0);
@@ -226,7 +227,7 @@ void GlobalContext::render()
     if (m_draw_floor) {
         m_floor_draw_program.use_program();
         glBindVertexArray(m_floor_vao);
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view_proj_mat));
 
         float sim_space_size;
         switch (m_simulation_mode)
@@ -250,13 +251,13 @@ void GlobalContext::render()
     {
     case SimulationMode::eParticle:
         m_particle_draw_program.use_program();
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view_proj_mat));
 
         m_particle_sys.gl_render_particles();
         break;
     case SimulationMode::eSprings:
 
-        m_spring_sys.gl_render_triangle_ribbons();
+        m_spring_sys.gl_render(view_proj_mat);
         break;
     }
 

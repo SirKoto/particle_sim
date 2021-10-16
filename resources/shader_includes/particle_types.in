@@ -3,6 +3,7 @@
     #pragma once
     #define VEC3 glm::vec3
     #define ALIGN(a) alignas(a)
+    namespace particle {
 #else
     #define uint32_t uint
     #define VEC3 vec3
@@ -49,6 +50,7 @@ struct ParticleSpawnerConfig {
 
 
 #ifdef __cplusplus
+    }; // namespace particle
     #undef VEC3
     #undef ALIGN
 #else

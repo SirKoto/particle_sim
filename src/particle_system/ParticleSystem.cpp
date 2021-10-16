@@ -7,6 +7,8 @@
 
 #include "graphics/my_gl_header.hpp"
 
+using namespace particle;
+
 ParticleSystem::ParticleSystem()
 {
 	const std::filesystem::path proj_dir(PROJECT_DIR);

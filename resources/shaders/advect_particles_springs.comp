@@ -1,0 +1,74 @@
+#version 430
+layout(local_size_x = 32, local_size_y = 1) in;
+
+#include "../shader_includes/spring_types.in"
+
+layout(std430, binding = BINDING_SYSTEM_CONFIG) buffer ConfigData {
+    SpringSystemConfig config;
+};
+
+layout(std430, binding = BINDING_PARTICLES_IN) buffer ParticleDataIn
+{
+    Particle particles_in[];
+};
+
+layout(std430, binding = BINDING_PARTICLES_OUT) buffer ParticleDataOut
+{
+    Particle particles_out[];
+};
+
+
+layout(location = 0) uniform float dt;
+
+
+void main() {
+    const uint idx = gl_GlobalInvocationID.x;
+    if(idx >= config.num_particles) {
+        return;
+    }
+
+    // verlet solver
+    const vec3 old_pos = particles_out[idx].pos;
+    vec3 actual_pos = particles_in[idx].pos;
+    vec3 new_pos = actual_pos + config.k_v * (actual_pos - old_pos) - vec3(0.0, dt * dt * config.gravity, 0.0);
+    
+    // Colide against 5 walls
+    // Bottom
+    if(new_pos.y < 0.0) {
+        const float delta_y = new_pos.y - actual_pos.y;
+        //new_pos.y = new_pos.y - (1.0 + config.bounce) * new_pos.y;
+        //actual_pos.y = new_pos.y - (delta_y - (1.0 + config.bounce) * delta_y);
+        new_pos.y = - new_pos.y * config.bounce ;
+        actual_pos.y = new_pos.y + delta_y * config.bounce;
+    }
+    // Back
+    if(new_pos.z < 0.0) {
+        const float delta_z = new_pos.z - actual_pos.z;
+        new_pos.z = - new_pos.z * config.bounce ;
+        actual_pos.z = new_pos.z + delta_z * config.bounce;
+    }
+    // Left
+    if(new_pos.x < 0.0) {
+        const float delta_x = new_pos.x - actual_pos.x;
+        new_pos.x = - new_pos.x * config.bounce;
+        actual_pos.x = new_pos.x + delta_x * config.bounce;
+    }
+    // Front
+    if(new_pos.z > config.simulation_space_size) {
+        const float delta_z = new_pos.z - actual_pos.z;
+        new_pos.z = new_pos.z - (1.0 + config.bounce) * (new_pos.z - config.simulation_space_size);
+        actual_pos.z = new_pos.z + delta_z * config.bounce;
+    }
+    // Right
+    if(new_pos.x  > config.simulation_space_size) {
+        const float delta_x = new_pos.x - actual_pos.x;
+        new_pos.x = new_pos.x - (1.0 + config.bounce) * (new_pos.x - config.simulation_space_size);
+        actual_pos.x = new_pos.x + delta_x * config.bounce;
+    }
+
+    particles_in[idx].pos = actual_pos;
+    particles_out[idx].pos = new_pos;
+    //particles_in[idx].pos.x = idx;
+    //particles_out[idx].pos.x = idx;  
+}
+

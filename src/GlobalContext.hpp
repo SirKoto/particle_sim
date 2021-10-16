@@ -41,7 +41,7 @@ private:
 		eSprings = 1,
 	};
 
-	SimulationMode m_simulation_mode = SimulationMode::eParticle;
+	SimulationMode m_simulation_mode = SimulationMode::eSprings;
 
 	ShaderProgram m_particle_draw_program;
 	ParticleSystem m_particle_sys;

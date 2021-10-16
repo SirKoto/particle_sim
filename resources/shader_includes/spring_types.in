@@ -1,0 +1,43 @@
+
+#ifdef __cplusplus
+    #pragma once
+    #define VEC3 glm::vec3
+    #define ALIGN(a) alignas(a)
+
+    namespace spring {
+#else
+    #define uint32_t uint
+    #define VEC3 vec3
+    #define ALIGN(a)
+#endif
+
+struct SpringSystemConfig {
+    uint32_t num_particles;
+    float gravity;
+    float particle_size;
+    float simulation_space_size;
+
+    float k_v;
+    float bounce;
+    float padding[2];
+};
+
+struct Particle {
+    ALIGN(16) VEC3 pos;
+    float padding;
+};
+
+#define BINDING_SYSTEM_CONFIG 0
+#define BINDING_PARTICLES_IN 1
+#define BINDING_PARTICLES_OUT 2
+
+
+#ifdef __cplusplus
+    }; // namespace spring
+    #undef VEC3
+    #undef ALIGN
+#else
+    #undef uint32_t
+    #undef VEC3
+    #undef ALIGN
+#endif
