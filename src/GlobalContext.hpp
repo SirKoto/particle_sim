@@ -34,6 +34,13 @@ private:
 
 	bool m_run_simulation = true;
 
+	enum class SimulationMode {
+		eParticle = 0,
+		eSprings = 1,
+	};
+
+	SimulationMode m_simulation_mode = SimulationMode::eParticle;
+
 	ShaderProgram m_particle_draw_program;
 	ParticleSystem m_particle_sys;
 

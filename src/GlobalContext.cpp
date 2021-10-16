@@ -73,12 +73,25 @@ void GlobalContext::update()
     // to use cpu time drawing the gui
     float time = (float)glfwGetTime();
     if (m_run_simulation) {
-        m_particle_sys.update(time, ImGui::GetIO().DeltaTime);
+        switch (m_simulation_mode)
+        {
+        case SimulationMode::eParticle:
+            m_particle_sys.update(time, ImGui::GetIO().DeltaTime);
+            break;
+        case SimulationMode::eSprings:
+            break;
+        }
     }
 
 
     if (ImGui::BeginMainMenuBar())
     {
+        ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10);
+
+        if (ImGui::Combo("##combo_mode", (int32_t*)&m_simulation_mode, "Particles\0Springs")) {
+
+        }
+
         ImGui::Checkbox("Run Simulation", &m_run_simulation);
 
         if (ImGui::BeginMenu("View"))
@@ -114,11 +127,19 @@ void GlobalContext::update()
             ImGui::PushItemWidth(ImGui::GetFontSize() * -5);
             ImGui::PushID("Sphere");
             ImGui::Checkbox("Draw Sphere", &m_draw_sphere);
-            if (ImGui::DragFloat3("Position", &m_sphere_pos.x, 0.01f)) {
-                m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
-            }
-            if (ImGui::DragFloat("Radius", &m_sphere_radius, 0.01f)) {
-                m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+
+            bool update_sphere = ImGui::DragFloat3("Position", &m_sphere_pos.x, 0.01f);
+            update_sphere |= ImGui::DragFloat("Radius", &m_sphere_radius, 0.01f);
+                
+            if (update_sphere) {
+                switch (m_simulation_mode)
+                {
+                case SimulationMode::eParticle:
+                    m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+                    break;
+                case SimulationMode::eSprings:
+                    break;
+                }
             }
             ImGui::PopID();
             ImGui::Separator();
@@ -131,7 +152,14 @@ void GlobalContext::update()
                 update_uniform_mesh();
             }
             if (ImGui::Button("Send to simulator")) {
-                m_particle_sys.set_mesh(m_mesh_mesh, get_mesh_transform());
+                switch (m_simulation_mode)
+                {
+                case SimulationMode::eParticle:
+                    m_particle_sys.set_mesh(m_mesh_mesh, get_mesh_transform());
+                    break;
+                case SimulationMode::eSprings:
+                    break;
+                }
             }
             ImGui::PopID();
             ImGui::Separator();
@@ -145,7 +173,14 @@ void GlobalContext::update()
 
     if (ImGui::Begin("Simulation Config")) {
         ImGui::PushItemWidth(ImGui::GetFontSize() * -12);
-        m_particle_sys.imgui_draw();
+        switch (m_simulation_mode)
+        {
+        case SimulationMode::eParticle:
+            m_particle_sys.imgui_draw();
+            break;
+        case SimulationMode::eSprings:
+            break;
+        }
         ImGui::PopItemWidth();
     }
     ImGui::End();
@@ -188,11 +223,19 @@ void GlobalContext::render()
             GL_UNSIGNED_INT, (void*)0);
     }
 
+    switch (m_simulation_mode)
+    {
+    case SimulationMode::eParticle:
+        m_particle_draw_program.use_program();
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
 
-    m_particle_draw_program.use_program();
-    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
+        m_particle_sys.gl_render_particles();
+        break;
+    case SimulationMode::eSprings:
+        break;
+    }
 
-    m_particle_sys.gl_render_particles();
+    
     
     glUseProgram(0);
     assert(glGetError() == GL_NO_ERROR);
