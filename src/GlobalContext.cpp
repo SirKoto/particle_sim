@@ -79,6 +79,7 @@ void GlobalContext::update()
             m_particle_sys.update(time, ImGui::GetIO().DeltaTime);
             break;
         case SimulationMode::eSprings:
+            m_spring_sys.update(time, ImGui::GetIO().DeltaTime);
             break;
         }
     }
@@ -89,7 +90,15 @@ void GlobalContext::update()
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10);
 
         if (ImGui::Combo("##combo_mode", (int32_t*)&m_simulation_mode, "Particles\0Springs")) {
-
+            switch (m_simulation_mode)
+            {
+            case SimulationMode::eParticle:
+                m_particle_sys.reset_bindings();
+                break;
+            case SimulationMode::eSprings:
+                m_spring_sys.reset_bindings();
+                break;
+            }
         }
 
         ImGui::Checkbox("Run Simulation", &m_run_simulation);
@@ -179,6 +188,7 @@ void GlobalContext::update()
             m_particle_sys.imgui_draw();
             break;
         case SimulationMode::eSprings:
+            m_spring_sys.imgui_draw();
             break;
         }
         ImGui::PopItemWidth();
@@ -217,7 +227,20 @@ void GlobalContext::render()
         m_floor_draw_program.use_program();
         glBindVertexArray(m_floor_vao);
         glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_camera.getProjView()));
-        glUniform1f(0, m_particle_sys.get_simulation_space_size());
+
+        float sim_space_size;
+        switch (m_simulation_mode)
+        {
+        case SimulationMode::eParticle:
+            sim_space_size = m_particle_sys.get_simulation_space_size();
+            break;
+        case SimulationMode::eSprings:
+            sim_space_size = m_spring_sys.get_simulation_space_size();
+            break;
+        }
+
+
+        glUniform1f(0, sim_space_size);
         glDrawElements(GL_TRIANGLES,
             3 * (GLsizei)m_floor_mesh.get_faces().size(),
             GL_UNSIGNED_INT, (void*)0);
@@ -232,6 +255,8 @@ void GlobalContext::render()
         m_particle_sys.gl_render_particles();
         break;
     case SimulationMode::eSprings:
+
+        m_spring_sys.gl_render_triangle_ribbons();
         break;
     }
 

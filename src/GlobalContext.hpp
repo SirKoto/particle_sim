@@ -5,6 +5,8 @@
 #include "graphics/TriangleMesh.hpp"
 #include "graphics/ShaderProgram.hpp"
 #include "particle_system/ParticleSystem.hpp"
+#include "particle_system/SpringSystem.hpp"
+
 
 
 class GlobalContext
@@ -43,6 +45,8 @@ private:
 
 	ShaderProgram m_particle_draw_program;
 	ParticleSystem m_particle_sys;
+
+	SpringSystem m_spring_sys;
 
 	bool m_draw_sphere = true;
 	uint32_t m_sphere_vao;

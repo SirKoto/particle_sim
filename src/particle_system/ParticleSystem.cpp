@@ -76,7 +76,6 @@ ParticleSystem::ParticleSystem()
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	update_sytem_config();
-	initialize_system();
 
 	// Initialize shapes
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_sphere_ssb);
@@ -84,7 +83,10 @@ ParticleSystem::ParticleSystem()
 		sizeof(Sphere),
 		nullptr, GL_STATIC_DRAW);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SHAPE_SPHERE, m_sphere_ssb);
+
+	initialize_system();
+
+
 	update_intersection_sphere();
 	update_intersection_mesh();
 }
@@ -231,6 +233,23 @@ void ParticleSystem::set_mesh(const TriangleMesh& mesh, const glm::mat4& transfo
 
 }
 
+void ParticleSystem::reset_bindings() const
+{
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SYSTEM_CONFIG, m_system_config_bo);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_MESH_VERTICES, m_intersect_mesh.get_vbo_vertices());
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_MESH_INDICES, m_intersect_mesh.get_vbo_indices());
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_MESH_NORMALS, m_intersect_mesh.get_vbo_normals());
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SHAPE_SPHERE, m_sphere_ssb);
+
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_DEAD_LIST, m_dead_particle_indices);
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_ATOMIC_DEAD, m_dead_particle_count);
+
+
+}
+
 void ParticleSystem::initialize_system()
 {
 	// TODO
@@ -276,13 +295,11 @@ void ParticleSystem::initialize_system()
 			dead_indices.data());
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	}
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_DEAD_LIST, m_dead_particle_indices);
 
 
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_dead_particle_count);
 	glNamedBufferData(m_dead_particle_count, sizeof(uint32_t), &m_system_config.max_particles, GL_STATIC_DRAW);
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
-	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_ATOMIC_DEAD, m_dead_particle_count);
 
 
 	// Initialise indirect draw buffer, and bind in 3, to use the atomic counter to track the particles that are alive
@@ -299,6 +316,8 @@ void ParticleSystem::initialize_system()
 	m_ico_mesh.gl_bind_to_vao();
 
 	glBindVertexArray(0);
+
+	reset_bindings();
 }
 
 void ParticleSystem::update_sytem_config()
