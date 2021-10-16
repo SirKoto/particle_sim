@@ -65,6 +65,8 @@ GlobalContext::GlobalContext() {
 
 
     m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+    m_spring_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+
 }
 
 void GlobalContext::update()
@@ -94,9 +96,13 @@ void GlobalContext::update()
             {
             case SimulationMode::eParticle:
                 m_particle_sys.reset_bindings();
+                m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+
                 break;
             case SimulationMode::eSprings:
                 m_spring_sys.reset_bindings();
+                m_spring_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+
                 break;
             }
         }
@@ -147,6 +153,7 @@ void GlobalContext::update()
                     m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
                     break;
                 case SimulationMode::eSprings:
+                    m_spring_sys.set_sphere(m_sphere_pos, m_sphere_radius);
                     break;
                 }
             }

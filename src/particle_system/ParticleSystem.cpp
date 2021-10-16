@@ -245,7 +245,6 @@ void ParticleSystem::reset_bindings() const
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SHAPE_SPHERE, m_sphere_ssb);
 
-
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_DEAD_LIST, m_dead_particle_indices);
 	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_ATOMIC_DEAD, m_dead_particle_count);
 

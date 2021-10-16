@@ -17,6 +17,8 @@ public:
 
 	void imgui_draw();
 
+	void set_sphere(const glm::vec3& pos, float radius);
+
 	float get_simulation_space_size() const { return m_system_config.simulation_space_size; }
 
 	void reset_bindings() const;
@@ -33,6 +35,10 @@ private:
 	ShaderProgram m_basic_draw_point;
 	ShaderProgram m_advect_particle_program;
 	uint32_t m_segment_vao;
+
+	uint32_t m_sphere_ssb;
+	//bool m_intersect_sphere_enabled = true;
+	Sphere m_sphere;
 
 	bool m_draw_points = true;
 	bool m_draw_lines = true;

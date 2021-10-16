@@ -31,6 +31,7 @@ struct Particle {
 #define BINDING_PARTICLES_IN 1
 #define BINDING_PARTICLES_OUT 2
 
+#define BINDING_SHAPE_SPHERE 6
 
 #ifdef __cplusplus
     }; // namespace spring

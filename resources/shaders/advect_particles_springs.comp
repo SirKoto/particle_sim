@@ -7,6 +7,9 @@ layout(std430, binding = BINDING_SYSTEM_CONFIG) buffer ConfigData {
     SpringSystemConfig config;
 };
 
+#include "../shader_includes/intersections.comp.in"
+
+
 layout(std430, binding = BINDING_PARTICLES_IN) buffer ParticleDataIn
 {
     Particle particles_in[];
@@ -15,6 +18,10 @@ layout(std430, binding = BINDING_PARTICLES_IN) buffer ParticleDataIn
 layout(std430, binding = BINDING_PARTICLES_OUT) buffer ParticleDataOut
 {
     Particle particles_out[];
+};
+
+layout(std430, binding = BINDING_SHAPE_SPHERE) buffer ShapeSphere {
+    Sphere sphere;
 };
 
 
@@ -64,6 +71,11 @@ void main() {
         const float delta_x = new_pos.x - actual_pos.x;
         new_pos.x = new_pos.x - (1.0 + config.bounce) * (new_pos.x - config.simulation_space_size);
         actual_pos.x = new_pos.x + delta_x * config.bounce;
+    }
+
+    // Sphere intersection
+    if(true) {
+        intersect(sphere, actual_pos, new_pos);
     }
 
     particles_in[idx].pos = actual_pos;

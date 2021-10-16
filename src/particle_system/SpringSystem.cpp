@@ -27,6 +27,8 @@ SpringSystem::SpringSystem()
 	glGenBuffers(2, m_vbo_particle_buffers);
 	glGenBuffers(1, &m_system_config_bo);
 	glGenBuffers(1, &m_spring_indices_bo);
+	glGenBuffers(1, &m_sphere_ssb);
+
 	glGenVertexArrays(1, &m_segment_vao);
 
 	// Bind indices
@@ -42,6 +44,13 @@ SpringSystem::SpringSystem()
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_system_config_bo);
 	glBufferData(GL_SHADER_STORAGE_BUFFER,
 		sizeof(SpringSystemConfig),
+		nullptr, GL_STATIC_DRAW);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	// Initialize shapes
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_sphere_ssb);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(Sphere),
 		nullptr, GL_STATIC_DRAW);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
@@ -100,11 +109,23 @@ void SpringSystem::imgui_draw()
 	ImGui::PopID();
 }
 
+void SpringSystem::set_sphere(const glm::vec3& pos, float radius)
+{
+	m_sphere.pos = pos;
+	m_sphere.radius = radius;
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_sphere_ssb);
+	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Sphere), &m_sphere);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
 void SpringSystem::reset_bindings() const
 {
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SYSTEM_CONFIG, m_system_config_bo);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_IN, m_vbo_particle_buffers[0]);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_OUT, m_vbo_particle_buffers[1]);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SHAPE_SPHERE, m_sphere_ssb);
 }
 
 void SpringSystem::initialize_system()
@@ -151,6 +172,7 @@ void SpringSystem::initialize_system()
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	update_sytem_config();
+	reset_bindings();
 }
 
 void SpringSystem::update_sytem_config()
