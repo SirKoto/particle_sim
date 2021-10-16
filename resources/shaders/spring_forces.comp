@@ -1,0 +1,31 @@
+#version 430
+#extension GL_NV_shader_atomic_float : require
+layout(local_size_x = 32, local_size_y = 1) in;
+
+#include "../shader_includes/spring_types.in"
+
+layout(std430, binding = BINDING_SYSTEM_CONFIG) buffer ConfigData {
+    SpringSystemConfig config;
+};
+
+layout(std430, binding = BINDING_PARTICLES_IN) buffer ParticleDataIn
+{
+    Particle particles[];
+};
+
+layout(std430, binding = BINDING_SEGMENT_INDICES) buffer SegmentsIndices
+{
+    uvec2 segments[];
+};
+
+layout(location = 0) uniform float dt;
+
+void main() {
+    const uint idx = gl_GlobalInvocationID.x;
+    if(idx >= config.num_segments) {
+        return;
+    }
+
+    atomicAdd(particles[segments[idx].x].pos.y,  0.1 * dt);
+    atomicAdd(particles[segments[idx].y].pos.y,  -0.1 * dt);
+}

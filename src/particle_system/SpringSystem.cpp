@@ -24,6 +24,10 @@ SpringSystem::SpringSystem()
 		&Shader(shad_dir / "advect_particles_springs.comp", Shader::Type::Compute), 1
 	);
 
+	m_spring_force_program = ShaderProgram(
+		&Shader(shad_dir / "spring_forces.comp", Shader::Type::Compute), 1
+	);
+
 	glGenBuffers(2, m_vbo_particle_buffers);
 	glGenBuffers(1, &m_system_config_bo);
 	glGenBuffers(1, &m_spring_indices_bo);
@@ -37,6 +41,7 @@ SpringSystem::SpringSystem()
 	glBindVertexArray(0);
 
 	m_system_config.num_particles = 10;
+	m_system_config.num_segments = m_system_config.num_particles - 1;
 	m_system_config.k_v = 0.9999f;
 	m_system_config.gravity = 9.8f;
 	m_system_config.simulation_space_size = 10.0f;
@@ -62,7 +67,13 @@ void SpringSystem::update(float time, float dt)
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_IN, m_vbo_particle_buffers[m_flipflop_state]);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_OUT, m_vbo_particle_buffers[1 - m_flipflop_state]);
 
+	m_spring_force_program.use_program();
+	glUniform1f(0, dt);
+	glDispatchCompute(m_system_config.num_segments / 32
+		+ (m_system_config.num_segments % 32 == 0 ? 0 : 1)
+		, 1, 1);
 
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	m_advect_particle_program.use_program();
 	glUniform1f(0, dt);
 	glDispatchCompute(m_system_config.num_particles / 32
@@ -88,7 +99,7 @@ void SpringSystem::gl_render(const glm::mat4& proj_view)
 	if (m_draw_lines) {
 		glBindVertexArray(m_segment_vao);
 		glDrawElements(GL_LINES,
-			2 * (m_system_config.num_particles - 1),
+			2 * m_system_config.num_segments,
 			GL_UNSIGNED_INT, nullptr);
 	}
 }
@@ -124,6 +135,7 @@ void SpringSystem::reset_bindings() const
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SYSTEM_CONFIG, m_system_config_bo);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_IN, m_vbo_particle_buffers[0]);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_OUT, m_vbo_particle_buffers[1]);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SEGMENT_INDICES, m_spring_indices_bo);
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SHAPE_SPHERE, m_sphere_ssb);
 }
@@ -160,8 +172,8 @@ void SpringSystem::initialize_system()
 	);
 
 	// Segment indices
-	std::vector<glm::ivec2> indices(m_system_config.num_particles - 1);
-	for (uint32_t i = 0; i < m_system_config.num_particles - 1; ++i) {
+	std::vector<glm::ivec2> indices(m_system_config.num_segments);
+	for (uint32_t i = 0; i < m_system_config.num_segments; ++i) {
 		indices[i] = glm::ivec2(i, i + 1);
 	}
 

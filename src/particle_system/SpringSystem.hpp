@@ -34,6 +34,8 @@ private:
 
 	ShaderProgram m_basic_draw_point;
 	ShaderProgram m_advect_particle_program;
+	ShaderProgram m_spring_force_program;
+
 	uint32_t m_segment_vao;
 
 	uint32_t m_sphere_ssb;

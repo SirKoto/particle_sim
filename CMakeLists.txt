@@ -29,6 +29,7 @@ set(COPY_DATA
     ${SHADER_PATH}/advect_particles.comp
     ${SHADER_PATH}/simple_spawner.comp
     ${SHADER_PATH}/advect_particles_springs.comp
+    ${SHADER_PATH}/spring_forces.comp
 
     ${SHADER_INCLUDE_PATH}/particle_types.in
     ${SHADER_INCLUDE_PATH}/spring_types.in

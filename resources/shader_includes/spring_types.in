@@ -13,13 +13,14 @@
 
 struct SpringSystemConfig {
     uint32_t num_particles;
+    uint32_t num_segments;
     float gravity;
     float particle_size;
-    float simulation_space_size;
 
+    float simulation_space_size;
     float k_v;
     float bounce;
-    float padding[2];
+    float padding[1];
 };
 
 struct Particle {
@@ -30,6 +31,7 @@ struct Particle {
 #define BINDING_SYSTEM_CONFIG 0
 #define BINDING_PARTICLES_IN 1
 #define BINDING_PARTICLES_OUT 2
+#define BINDING_SEGMENT_INDICES 3
 
 #define BINDING_SHAPE_SPHERE 6
 
