@@ -13,6 +13,11 @@ layout(std430, binding = BINDING_PARTICLES_IN) buffer ParticleDataIn
     Particle particles[];
 };
 
+layout(std430, binding = BINDING_PARTICLES_OUT) buffer ParticleDataPre
+{
+    Particle particles_pre[];
+};
+
 layout(std430, binding = BINDING_SEGMENT_INDICES) buffer SegmentsIndices
 {
     uvec2 segments[];
@@ -41,12 +46,18 @@ void main() {
 
     const vec3 p0 = particles[i0].pos;
     const vec3 p1 = particles[i1].pos;
+    const vec3 p0_pre = particles_pre[i0].pos;
+    const vec3 p1_pre = particles_pre[i1].pos;
+
     const vec3 dir_m = p1 - p0;
     const float dist = length(dir_m);
     const vec3 dir = dir_m / dist;
-    // Rest length of 1, and k of 20
+    const vec3 delta_v = p1 - p1_pre - p0 + p0_pre;
 
-    const vec3 f0 = dir * (config.k_e * (dist - L[idx]));
+    const vec3 f0 = dir * (
+        config.k_e * (dist - L[idx]) +
+        config.k_d / dt * dot(dir, delta_v)
+        );
     const vec3 f1 = -f0;
     
     atomicAdd(forces[i0].x, f0.x);
