@@ -32,6 +32,8 @@ private:
 	uint32_t m_vbo_particle_buffers[2];
 	uint32_t m_spring_indices_bo;
 	uint32_t m_forces_buffer;
+	uint32_t m_original_lengths_buffer;
+
 
 	ShaderProgram m_basic_draw_point;
 	ShaderProgram m_advect_particle_program;
@@ -45,9 +47,10 @@ private:
 
 	bool m_draw_points = true;
 	bool m_draw_lines = true;
+	bool m_intersect_sphere = true;
 
 	void initialize_system();
 	void update_sytem_config();
-
+	void update_intersection_sphere();
 
 };

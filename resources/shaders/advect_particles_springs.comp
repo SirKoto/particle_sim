@@ -31,7 +31,7 @@ layout(std430, binding = BINDING_SHAPE_SPHERE) buffer ShapeSphere {
 
 
 layout(location = 0) uniform float dt;
-
+layout(location = 1) uniform uint intersect_sphere;
 
 void main() {
     const uint idx = gl_GlobalInvocationID.x;
@@ -46,7 +46,7 @@ void main() {
         + config.k_v * (actual_pos - old_pos) 
         + dt * dt * (
             vec3(0.0,  -config.gravity, 0.0) 
-            + forces[idx] / 1.0 // divide by mass
+            + forces[idx] / config.particle_mass // forces to acceleration
             );
     
     // Colide against 5 walls
@@ -84,7 +84,7 @@ void main() {
     }
 
     // Sphere intersection
-    if(true) {
+    if(intersect_sphere != 0) {
         intersect(sphere, actual_pos, new_pos);
     }
 

@@ -33,6 +33,7 @@ SpringSystem::SpringSystem()
 	glGenBuffers(1, &m_spring_indices_bo);
 	glGenBuffers(1, &m_sphere_ssb);
 	glGenBuffers(1, &m_forces_buffer);
+	glGenBuffers(1, &m_original_lengths_buffer);
 
 	glGenVertexArrays(1, &m_segment_vao);
 
@@ -46,7 +47,11 @@ SpringSystem::SpringSystem()
 	m_system_config.k_v = 0.9999f;
 	m_system_config.gravity = 9.8f;
 	m_system_config.simulation_space_size = 10.0f;
-	m_system_config.bounce = 0.5f,
+	m_system_config.bounce = 0.5f;
+	m_system_config.k_e = 20.f;
+	m_system_config.k_d = 5.0f;
+	m_system_config.particle_mass = 1.0f;
+
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_system_config_bo);
 	glBufferData(GL_SHADER_STORAGE_BUFFER,
 		sizeof(SpringSystemConfig),
@@ -61,6 +66,7 @@ SpringSystem::SpringSystem()
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	initialize_system();
+	update_intersection_sphere();
 }
 
 void SpringSystem::update(float time, float dt)
@@ -115,6 +121,25 @@ void SpringSystem::imgui_draw()
 {
 	ImGui::PushID("springSys");
 	ImGui::Text("Spring System Config");
+	bool update = false;
+	update |= ImGui::DragFloat("Gravity", &m_system_config.gravity, 0.01f);
+	//update |= ImGui::DragFloat("Particle size", &m_system_config.particle_size, 0.01f, 0.0f, 2.0f);
+	update |= ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
+	update |= ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0001f, 0.0f, "%.5f");
+	update |= ImGui::InputFloat("Bounciness", &m_system_config.bounce, 0.1f);
+
+	update |= ImGui::DragFloat("K elastic", &m_system_config.k_e, 0.1f);
+	update |= ImGui::DragFloat("K damping", &m_system_config.k_d, 0.1f);
+	update |= ImGui::DragFloat("Particle mass", &m_system_config.particle_mass, 0.1f);
+
+	if (update) {
+		update_sytem_config();
+	}
+
+	ImGui::Separator();
+	if(ImGui::Checkbox("Sphere collisions", &m_intersect_sphere)) {
+		update_intersection_sphere();
+	}
 
 	ImGui::Checkbox("Draw Points", &m_draw_points);
 	ImGui::Checkbox("Draw Lines", &m_draw_lines);
@@ -145,6 +170,7 @@ void SpringSystem::reset_bindings() const
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SEGMENT_INDICES, m_spring_indices_bo);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_FORCES, m_forces_buffer);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SHAPE_SPHERE, m_sphere_ssb);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_ORIGINAL_LENGTHS, m_original_lengths_buffer);
 }
 
 void SpringSystem::initialize_system()
@@ -188,8 +214,16 @@ void SpringSystem::initialize_system()
 	glBufferData(GL_SHADER_STORAGE_BUFFER,
 		sizeof(glm::ivec2) * indices.size(),
 		indices.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+	// Segment lengths
+	std::vector<float> original_lengths(m_system_config.num_segments);
+	for (uint32_t i = 0; i < m_system_config.num_segments; ++i) {
+		original_lengths[i] = glm::length(p[indices[i].x].pos - p[indices[i].y].pos);
+	}
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_original_lengths_buffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(float) * original_lengths.size(),
+		original_lengths.data(), GL_STATIC_DRAW);
 
 	// force buffers
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_forces_buffer);
@@ -212,4 +246,16 @@ void SpringSystem::update_sytem_config()
 		sizeof(SpringSystemConfig),	// size
 		&m_system_config	// data
 	);
+}
+
+void SpringSystem::update_intersection_sphere()
+{
+	m_advect_particle_program.use_program();
+	if (m_intersect_sphere) {
+		glUniform1ui(1, 1);
+	}
+	else {
+		glUniform1ui(1, 0);
+	}
+	glUseProgram(0);
 }

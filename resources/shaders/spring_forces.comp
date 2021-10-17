@@ -23,6 +23,11 @@ layout(std430, binding = BINDING_FORCES) buffer Forces
     vec3 forces[];
 };
 
+layout(std430, binding = BINDING_ORIGINAL_LENGTHS) buffer OriginalLengths 
+{
+    float L[];
+};
+
 layout(location = 0) uniform float dt;
 
 void main() {
@@ -41,7 +46,7 @@ void main() {
     const vec3 dir = dir_m / dist;
     // Rest length of 1, and k of 20
 
-    const vec3 f0 = dir * (20 * (dist - 1.0));
+    const vec3 f0 = dir * (config.k_e * (dist - L[idx]));
     const vec3 f1 = -f0;
     
     atomicAdd(forces[i0].x, f0.x);
