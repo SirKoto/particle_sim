@@ -39,6 +39,10 @@ void main() {
         return;
     }
 
+    if(idx < config.num_fixed_particles) {
+        return;
+    }
+
     // verlet solver
     const vec3 old_pos = particles_out[idx].pos;
     vec3 actual_pos = particles_in[idx].pos;

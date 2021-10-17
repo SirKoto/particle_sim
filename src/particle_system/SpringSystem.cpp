@@ -51,6 +51,7 @@ SpringSystem::SpringSystem()
 	m_system_config.k_e = 20.f;
 	m_system_config.k_d = 5.0f;
 	m_system_config.particle_mass = 1.0f;
+	m_system_config.num_fixed_particles = 1;
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_system_config_bo);
 	glBufferData(GL_SHADER_STORAGE_BUFFER,
@@ -144,6 +145,18 @@ void SpringSystem::imgui_draw()
 	ImGui::Checkbox("Draw Points", &m_draw_points);
 	ImGui::Checkbox("Draw Lines", &m_draw_lines);
 	ImGui::Separator();
+	ImGui::Combo("Init system", reinterpret_cast<int*>(&m_init_system), "Rope\0");
+
+	if (m_init_system == InitSystems::eRope) {
+		ImGui::PushID("RopeInit");
+		ImGui::DragFloat3("Init position", glm::value_ptr(m_rope_init_point), 0.01f);
+		ImGui::DragFloat3("Rope direction", glm::value_ptr(m_rope_init_dir), 0.01f);
+		ImGui::InputScalar("Num particles", ImGuiDataType_U32, &m_rope_init_num_particles);
+		ImGui::InputFloat("Rope length", &m_rope_init_length, 0.1f);
+		ImGui::InputScalar("Num fixed particles", ImGuiDataType_U32, &m_rope_init_num_fixed_particles);
+
+		ImGui::PopID();
+	}
 
 	if (ImGui::Button("Reset")) {
 		initialize_system();
@@ -177,7 +190,6 @@ void SpringSystem::initialize_system()
 {
 	m_flipflop_state = false;
 
-	uint32_t num_particles = m_system_config.num_particles;
 
 	for (uint32_t i = 0; i < 2; ++i) {
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_vbo_particle_buffers[i]);
@@ -187,44 +199,15 @@ void SpringSystem::initialize_system()
 	}
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-	std::vector<Particle> p(num_particles);
-	for (uint32_t i = 0; i < num_particles; ++i) {
-		p[i].pos = glm::vec3(2.0f + (float)i, 5.0f, 5.0f);
+	switch (m_init_system)
+	{
+	case InitSystems::eRope:
+		init_system_rope();
+		break;
+	default:
+		break;
 	}
-	glNamedBufferSubData(
-		m_vbo_particle_buffers[1], // buffer name
-		0, // offset
-		num_particles * sizeof(Particle),	// size
-		p.data()	// data
-	);
-	glNamedBufferSubData(
-		m_vbo_particle_buffers[0], // buffer name
-		0, // offset
-		num_particles * sizeof(Particle),	// size
-		p.data()	// data
-	);
-
-	// Segment indices
-	std::vector<glm::ivec2> indices(m_system_config.num_segments);
-	for (uint32_t i = 0; i < m_system_config.num_segments; ++i) {
-		indices[i] = glm::ivec2(i, i + 1);
-	}
-
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_spring_indices_bo);
-	glBufferData(GL_SHADER_STORAGE_BUFFER,
-		sizeof(glm::ivec2) * indices.size(),
-		indices.data(), GL_STATIC_DRAW);
-
-	// Segment lengths
-	std::vector<float> original_lengths(m_system_config.num_segments);
-	for (uint32_t i = 0; i < m_system_config.num_segments; ++i) {
-		original_lengths[i] = glm::length(p[indices[i].x].pos - p[indices[i].y].pos);
-	}
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_original_lengths_buffer);
-	glBufferData(GL_SHADER_STORAGE_BUFFER,
-		sizeof(float) * original_lengths.size(),
-		original_lengths.data(), GL_STATIC_DRAW);
-
+	
 	// force buffers
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_forces_buffer);
 	glBufferData(GL_SHADER_STORAGE_BUFFER,
@@ -258,4 +241,52 @@ void SpringSystem::update_intersection_sphere()
 		glUniform1ui(1, 0);
 	}
 	glUseProgram(0);
+}
+
+void SpringSystem::init_system_rope()
+{
+	const uint32_t num_particles = m_system_config.num_particles = m_rope_init_num_particles;
+	m_system_config.num_segments = num_particles - 1;
+	m_system_config.num_fixed_particles = m_rope_init_num_fixed_particles;
+
+	std::vector<Particle> p(num_particles);
+	const glm::vec3 dir = glm::normalize(m_rope_init_dir);
+	float delta_x = m_rope_init_length / (float)m_rope_init_num_particles;
+	for (uint32_t i = 0; i < num_particles; ++i) {
+		p[i].pos = m_rope_init_point + dir * ((float)i * delta_x);
+	}
+	glNamedBufferData(
+		m_vbo_particle_buffers[0], // buffer name
+		num_particles * sizeof(Particle),	// size
+		p.data(),	// data
+		GL_DYNAMIC_DRAW
+	);
+	glNamedBufferData(
+		m_vbo_particle_buffers[1], // buffer name
+		num_particles * sizeof(Particle),	// size
+		p.data(),	// data
+		GL_DYNAMIC_DRAW
+	);
+
+	// Segment indices
+	std::vector<glm::ivec2> indices(m_system_config.num_segments);
+	for (uint32_t i = 0; i < m_system_config.num_segments; ++i) {
+		indices[i] = glm::ivec2(i, i + 1);
+	}
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_spring_indices_bo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(glm::ivec2) * indices.size(),
+		indices.data(), GL_STATIC_DRAW);
+
+	// Segment lengths
+	std::vector<float> original_lengths(m_system_config.num_segments);
+	for (uint32_t i = 0; i < m_system_config.num_segments; ++i) {
+		original_lengths[i] = glm::length(p[indices[i].x].pos - p[indices[i].y].pos);
+	}
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_original_lengths_buffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(float) * original_lengths.size(),
+		original_lengths.data(), GL_STATIC_DRAW);
+
 }

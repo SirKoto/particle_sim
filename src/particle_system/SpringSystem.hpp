@@ -49,8 +49,21 @@ private:
 	bool m_draw_lines = true;
 	bool m_intersect_sphere = true;
 
+	enum class InitSystems {
+		eRope = 0,
+	};
+
+	InitSystems m_init_system = InitSystems::eRope;
+
+	glm::vec3 m_rope_init_point = glm::vec3(2.0f, 5.0f, 5.0f);
+	glm::vec3 m_rope_init_dir = glm::vec3(1.0f, 0.0f, 0.0f);
+	uint32_t m_rope_init_num_particles = 20;
+	float m_rope_init_length = 5.0f;
+	uint32_t m_rope_init_num_fixed_particles = 1;
+
 	void initialize_system();
 	void update_sytem_config();
 	void update_intersection_sphere();
 
+	void init_system_rope();
 };
