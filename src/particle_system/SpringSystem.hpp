@@ -33,6 +33,7 @@ private:
 	uint32_t m_spring_indices_bo;
 	uint32_t m_forces_buffer;
 	uint32_t m_original_lengths_buffer;
+	uint32_t m_fixed_points_buffer;
 
 
 	ShaderProgram m_basic_draw_point;
@@ -55,7 +56,8 @@ private:
 
 	InitSystems m_init_system = InitSystems::eRope;
 
-	glm::vec3 m_rope_init_point = glm::vec3(2.0f, 5.0f, 5.0f);
+	glm::vec3 m_interact_point = glm::vec3(2.0f, 5.0f, 5.0f);
+
 	glm::vec3 m_rope_init_dir = glm::vec3(1.0f, 0.0f, 0.0f);
 	uint32_t m_rope_init_num_particles = 20;
 	float m_rope_init_length = 5.0f;
@@ -66,4 +68,5 @@ private:
 	void update_intersection_sphere();
 
 	void init_system_rope();
+	void update_interaction_data();
 };

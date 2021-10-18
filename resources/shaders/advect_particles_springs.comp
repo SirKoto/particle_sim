@@ -29,9 +29,14 @@ layout(std430, binding = BINDING_SHAPE_SPHERE) buffer ShapeSphere {
     Sphere sphere;
 };
 
+layout(std430, binding = BINDING_FIXED_POINTS) buffer FixedParticles {
+    Particle fixed_p[];
+};
 
 layout(location = 0) uniform float dt;
 layout(location = 1) uniform uint intersect_sphere;
+layout(location = 2) uniform vec3 interact_pos;
+
 
 void main() {
     const uint idx = gl_GlobalInvocationID.x;
@@ -40,6 +45,7 @@ void main() {
     }
 
     if(idx < config.num_fixed_particles) {
+        particles_out[idx].pos = fixed_p[idx].pos + interact_pos;
         return;
     }
 
