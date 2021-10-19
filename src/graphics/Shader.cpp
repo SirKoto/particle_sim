@@ -14,6 +14,7 @@ void fill_stream(const std::filesystem::path& path, std::stringstream& stream) {
 	if (!file)
 	{
 		std::cerr << "ERROR SHADER FILE_NOT_SUCCESFULLY_READ: " << path << std::endl;
+		exit(1);
 	}
 	else
 	{
@@ -67,6 +68,7 @@ Shader::Shader(const std::filesystem::path& path, Type type)
 		GLchar infoLog[512];
 		glGetShaderInfoLog(m_id, 512, NULL, infoLog);
 		std::cerr << "ERROR SHADER COMPILATION_FAILED "<< path << "\n" << infoLog << std::endl;
+		exit(1);
 	}
 }
 

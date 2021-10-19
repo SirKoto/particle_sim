@@ -18,6 +18,7 @@ ShaderProgram::ShaderProgram(const Shader* shaders, uint32_t num)
 		GLchar infoLog[512];
 		glGetProgramInfoLog(m_id, 512, NULL, infoLog);
 		std::cerr << "ERROR SHADER PROGRAM LINKING_FAILED\n" << infoLog << std::endl;
+		exit(2);
 	}
 }
 
