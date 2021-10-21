@@ -108,6 +108,7 @@ void SpringSystem::update(float time, float dt)
 
 	m_advect_particle_program.use_program();
 	glUniform1f(0, dt);
+	glUniform4fv(3, 1, glm::value_ptr(m_rotation));
 	glDispatchCompute(m_system_config.num_particles / 32
 		+ (m_system_config.num_particles % 32 == 0 ? 0 : 1)
 		, 1, 1);
@@ -171,6 +172,34 @@ void SpringSystem::imgui_draw()
 	if (ImGui::DragFloat3("Position", glm::value_ptr(m_sphere_head.pos), 0.01f)) {
 		update_interaction_data();
 	}
+
+	ImGui::InputFloat3("Rotation axis", glm::value_ptr(m_rotation_axis));
+	ImGui::SameLine();
+	if (ImGui::Button("Normalize")) {
+		m_rotation_axis = glm::normalize(m_rotation_axis);
+	}
+
+	float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+	ImGui::PushButtonRepeat(true);
+	if (ImGui::ArrowButton("##left", ImGuiDir_Left)) {
+		const float s = std::sinf(-m_rotation_rate);
+		const float c = std::cosf(-m_rotation_rate);
+		glm::quat q(c, s * m_rotation_axis);
+
+		m_rotation = q * m_rotation;
+	}
+	ImGui::SameLine(0.0f, spacing);
+	if (ImGui::ArrowButton("##right", ImGuiDir_Right)) { 
+		const float s = std::sinf(m_rotation_rate);
+		const float c = std::cosf(m_rotation_rate);
+		glm::quat q(c, s * m_rotation_axis);
+
+		m_rotation = q * m_rotation;
+	}
+	ImGui::PopButtonRepeat();
+	
+	ImGui::SameLine();
+	ImGui::InputFloat("Rate", &m_rotation_rate);
 
 	ImGui::Separator();
 	if(ImGui::Checkbox("Sphere collisions", &m_intersect_sphere)) {
@@ -414,6 +443,8 @@ void fibonacci_spiral_sphere(std::vector<Particle>* vectors_, const int32_t num_
 
 void SpringSystem::init_system_sphere()
 {
+	m_rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+
 	const uint32_t num_particles = m_system_config.num_particles = m_sphere_init_num_hairs * m_sphere_init_particles_per_strand;
 	m_system_config.num_segments = m_sphere_init_num_hairs * (m_sphere_init_particles_per_strand - 1);
 	

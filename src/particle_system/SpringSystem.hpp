@@ -4,6 +4,7 @@
 #include "spring_types.in"
 #include "intersections.comp.in"
 #include "graphics/TriangleMesh.hpp"
+#include <glm/gtc/quaternion.hpp>
 
 class SpringSystem {
 public:
@@ -49,6 +50,9 @@ private:
 	//bool m_intersect_sphere_enabled = true;
 	Sphere m_sphere;
 	Sphere m_sphere_head = { glm::vec3(2.0f, 5.0f, 5.0f), 1.0f};
+	glm::quat m_rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+	glm::vec3 m_rotation_axis = glm::vec3(1.0f, 0.0f, 0.0f);
+	float m_rotation_rate = 0.01f;
 
 	bool m_draw_points = true;
 	bool m_draw_lines = true;

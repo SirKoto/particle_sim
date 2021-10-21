@@ -45,7 +45,11 @@ layout(std430, binding = BINDING_SEGMENTS_MAPPING_LIST) buffer SegmentsAdj {
 layout(location = 0) uniform float dt;
 layout(location = 1) uniform uint intersect_sphere;
 layout(location = 2) uniform uint intersect_sphere_head;
+layout(location = 3) uniform vec4 base_rotation_quaternion;
 
+vec3 qtransform( vec4 q, vec3 v ){ 
+    return v + 2.0 * cross(cross(v, q.xyz ) + q.w * v, q.xyz);
+}
 
 void main() {
     const uint idx = gl_GlobalInvocationID.x;
@@ -54,7 +58,7 @@ void main() {
     }
 
     if(idx < config.num_fixed_particles) {
-        particles_out[idx].pos = fixed_p[idx].pos + sphere_head.pos;
+        particles_out[idx].pos = qtransform(base_rotation_quaternion, fixed_p[idx].pos) + sphere_head.pos;
         return;
     }
 
