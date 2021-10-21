@@ -26,6 +26,8 @@ public:
 		return m_clear_color;
 	}
 
+	inline double get_max_fps() const { return m_max_fps; }
+
 private:
 	glm::vec3 m_clear_color = glm::vec3(0.45f, 0.55f, 0.60f);
 	Camera m_camera;
@@ -40,13 +42,20 @@ private:
 		eParticle = 0,
 		eSprings = 1,
 	};
+	enum class DeltaTimeMode {
+		eDynamic = 0,
+		eStaticMax = 1,
+	};
 
 	SimulationMode m_simulation_mode = SimulationMode::eSprings;
+	DeltaTimeMode m_deltatime_mode = DeltaTimeMode::eStaticMax;
 
 	ShaderProgram m_particle_draw_program;
 	ParticleSystem m_particle_sys;
 
 	SpringSystem m_spring_sys;
+
+	double m_max_fps = 120.0;
 
 	bool m_draw_sphere = true;
 	uint32_t m_sphere_vao;

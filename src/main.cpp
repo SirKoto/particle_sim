@@ -32,11 +32,10 @@ void main_loop(GLFWwindow* window) {
     bool show_demo_window = true;
     GlobalContext gc;
     double prev_frame_time = glfwGetTime();
-    double max_fps = 120.0;
 
     while (!glfwWindowShouldClose(window)) {
         double actual_frame_time = glfwGetTime();
-        while (actual_frame_time - prev_frame_time < 1.0 / max_fps) {
+        while (actual_frame_time - prev_frame_time < 1.0 / gc.get_max_fps()) {
             std::this_thread::sleep_for(std::chrono::nanoseconds(50));
             actual_frame_time = glfwGetTime();
         }
@@ -57,15 +56,6 @@ void main_loop(GLFWwindow* window) {
                 if (ImGui::Button("Quit")) {
                     glfwSetWindowShouldClose(window, true);
                 }
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Debug"))
-            {
-                if (ImGui::InputDouble("Max FPS", &max_fps, 1.0)) {
-                    max_fps = std::clamp(max_fps, 1.0, 500.0);
-                }
-
                 ImGui::EndMenu();
             }
 

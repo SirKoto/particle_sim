@@ -90,13 +90,27 @@ void GlobalContext::update()
     // to use cpu time drawing the gui
     float time = (float)glfwGetTime();
     if (m_run_simulation) {
+
+        float delta_time;
+        switch (m_deltatime_mode)
+        {
+        case GlobalContext::DeltaTimeMode::eDynamic:
+            delta_time = ImGui::GetIO().DeltaTime;
+            break;
+        case GlobalContext::DeltaTimeMode::eStaticMax:
+            delta_time = 1.0f / (float)m_max_fps;
+            break;
+        default:
+            break;
+        }
+
         switch (m_simulation_mode)
         {
         case SimulationMode::eParticle:
-            m_particle_sys.update(time, ImGui::GetIO().DeltaTime);
+            m_particle_sys.update(time, delta_time);
             break;
         case SimulationMode::eSprings:
-            m_spring_sys.update(time, ImGui::GetIO().DeltaTime);
+            m_spring_sys.update(time, delta_time);
             break;
         }
     }
@@ -130,6 +144,17 @@ void GlobalContext::update()
             ImGui::Checkbox("ImGui Demo Window", &m_show_imgui_demo_window);
             ImGui::Checkbox("Camera info", &m_show_camera_window);
 
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Debug"))
+        {
+            if (ImGui::InputDouble("Max FPS", &m_max_fps, 1.0)) {
+                m_max_fps = std::clamp(m_max_fps, 1.0, 500.0);
+            }
+            ImGui::Separator();
+            ImGui::Combo("Time step mode", (int32_t*)&m_deltatime_mode, "Dynamic\0Static Max\0");
 
             ImGui::EndMenu();
         }
