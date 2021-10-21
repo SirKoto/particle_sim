@@ -45,6 +45,20 @@ SpringSystem::SpringSystem()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spring_indices_bo);
 	glBindVertexArray(0);
 
+	// Generate sphere
+	m_sphere_mesh = TriangleMesh(proj_dir / "resources/ply/sphere.ply");
+	m_sphere_mesh.upload_to_gpu();
+	std::array<Shader, 2> sphere_shaders = {
+		Shader((shad_dir / "sphere.vert"), Shader::Type::Vertex),
+		Shader((shad_dir / "sphere.frag"), Shader::Type::Fragment)
+	};
+	m_sphere_draw_program = ShaderProgram(sphere_shaders.data(), (uint32_t)sphere_shaders.size());
+
+	glGenVertexArrays(1, &m_sphere_vao);
+	glBindVertexArray(m_sphere_vao);
+	m_sphere_mesh.gl_bind_to_vao();
+	glBindVertexArray(0);
+
 	m_system_config.num_particles = 10;
 	m_system_config.num_segments = m_system_config.num_particles - 1;
 	m_system_config.k_v = 0.9999f;
@@ -65,7 +79,7 @@ SpringSystem::SpringSystem()
 	// Initialize shapes
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_sphere_ssb);
 	glBufferData(GL_SHADER_STORAGE_BUFFER,
-		sizeof(Sphere),
+		2 * sizeof(Sphere),
 		nullptr, GL_STATIC_DRAW);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
@@ -105,6 +119,18 @@ void SpringSystem::update(float time, float dt)
 void SpringSystem::gl_render(const glm::mat4& proj_view)
 {
 
+	// Draw sphere
+	if (m_init_system == InitSystems::eSphere) {
+		m_sphere_draw_program.use_program();
+		glBindVertexArray(m_sphere_vao);
+		glUniform3fv(0, 1, glm::value_ptr(m_sphere_head.pos));
+		glUniform1f(1, m_sphere_head.radius);
+		glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(proj_view));
+		glDrawElements(GL_TRIANGLES,
+			3 * (GLsizei)m_sphere_mesh.get_faces().size(),
+			GL_UNSIGNED_INT, (void*)0);
+	}
+
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	if (m_draw_points || m_draw_lines) {
 		m_basic_draw_point.use_program();
@@ -142,7 +168,7 @@ void SpringSystem::imgui_draw()
 	}
 
 	ImGui::Text("Interaction:");
-	if (ImGui::DragFloat3("Position", glm::value_ptr(m_interact_point), 0.01f)) {
+	if (ImGui::DragFloat3("Position", glm::value_ptr(m_sphere_head.pos), 0.01f)) {
 		update_interaction_data();
 	}
 
@@ -154,7 +180,11 @@ void SpringSystem::imgui_draw()
 	ImGui::Checkbox("Draw Points", &m_draw_points);
 	ImGui::Checkbox("Draw Lines", &m_draw_lines);
 	ImGui::Separator();
-	ImGui::Combo("Init system", reinterpret_cast<int*>(&m_init_system), "Rope\0");
+
+	if (ImGui::Combo("Init system", reinterpret_cast<int*>(&m_init_system), "Rope\0Sphere\0")) {
+		m_head_sphere_enabled = m_init_system == InitSystems::eSphere;
+		update_interaction_data();
+	}
 
 	if (m_init_system == InitSystems::eRope) {
 		ImGui::PushID("RopeInit");
@@ -164,6 +194,18 @@ void SpringSystem::imgui_draw()
 		ImGui::InputScalar("Num fixed particles", ImGuiDataType_U32, &m_rope_init_num_fixed_particles);
 
 		ImGui::PopID();
+	}
+	else if (m_init_system == InitSystems::eSphere) {
+		ImGui::PushID("SphereInit");
+		ImGui::DragFloat("Radius", &m_sphere_head.radius, 0.01f, 0.0f, FLT_MAX);
+		ImGui::InputScalar("Num hairs", ImGuiDataType_U32, &m_sphere_init_num_hairs);
+		ImGui::InputScalar("Particles per strand", ImGuiDataType_U32, &m_sphere_init_particles_per_strand);
+		ImGui::InputFloat("Hair length", &m_hair_length, 0.1f);
+
+		ImGui::PopID();
+	}
+	else {
+		assert(false);
 	}
 
 	if (ImGui::Button("Reset")) {
@@ -215,7 +257,11 @@ void SpringSystem::initialize_system()
 	case InitSystems::eRope:
 		init_system_rope();
 		break;
+	case InitSystems::eSphere:
+		init_system_sphere();
+		break;
 	default:
+		assert(false);
 		break;
 	}
 	
@@ -264,7 +310,7 @@ void SpringSystem::init_system_rope()
 	const glm::vec3 dir = glm::normalize(m_rope_init_dir);
 	float delta_x = m_rope_init_length / (float)m_rope_init_num_particles;
 	for (uint32_t i = 0; i < num_particles; ++i) {
-		p[i].pos = m_interact_point + dir * ((float)i * delta_x);
+		p[i].pos = m_sphere_head.pos + dir * ((float)i * delta_x);
 	}
 	glNamedBufferData(
 		m_vbo_particle_buffers[0], // buffer name
@@ -330,7 +376,7 @@ void SpringSystem::init_system_rope()
 		mappings.data(), GL_STATIC_DRAW);
 	// Upload also fixed particles, modify original points
 	for (uint32_t i = 0; i < m_rope_init_num_fixed_particles; ++i) {
-		p[i].pos -= m_interact_point;
+		p[i].pos -= m_sphere_head.pos;
 	}
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_fixed_points_buffer);
 	glBufferData(GL_SHADER_STORAGE_BUFFER,
@@ -340,8 +386,144 @@ void SpringSystem::init_system_rope()
 
 }
 
+// Generation of points at the same distance on the unit sphere
+// extracted from https://bduvenhage.me/geometry/2019/07/31/generating-equidistant-vectors.html
+void fibonacci_spiral_sphere(std::vector<Particle>* vectors_, const int32_t num_points) {
+	std::vector<Particle>& vectors = *vectors_;
+	vectors.reserve(num_points);
+
+	const double gr = (std::sqrt(5.0) + 1.0) / 2.0;  // golden ratio = 1.6180339887498948482
+	const double ga = (2.0 - gr) * (2.0 * glm::pi<double>());  // golden angle = 2.39996322972865332
+
+	for (size_t i = 1; i <= num_points; ++i) {
+		const double lat = std::asin(-1.0 + 2.0 * double(i) / (num_points + 1));
+		const double lon = ga * i;
+
+		const float x = static_cast<float>(std::cos(lon) * std::cos(lat));
+		const float y = static_cast<float>(std::sin(lon) * std::cos(lat));
+		const float z = static_cast<float>(std::sin(lat));
+
+		vectors.emplace_back(Particle{ glm::vec3{ x, y, z }, 0.0f });
+		//float len = std::sqrt(x*x + y*y + z*z);
+		//std::cout << len << std::endl;
+
+		//std::cout<< "("<<x<<","<<y<<","<<z<<"),";
+	}
+	//std::cout << std::endl;
+}
+
+void SpringSystem::init_system_sphere()
+{
+	const uint32_t num_particles = m_system_config.num_particles = m_sphere_init_num_hairs * m_sphere_init_particles_per_strand;
+	m_system_config.num_segments = m_sphere_init_num_hairs * (m_sphere_init_particles_per_strand - 1);
+	
+	std::vector<Particle> particles;
+	particles.reserve(num_particles);
+	std::vector<glm::ivec2> indices; indices.reserve(m_system_config.num_segments);
+
+	// fill starting points
+	fibonacci_spiral_sphere(&particles, m_sphere_init_num_hairs);
+	// Upload fixed particles
+	m_system_config.num_fixed_particles = m_sphere_init_num_hairs;
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_fixed_points_buffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(Particle) * m_sphere_init_num_hairs,
+		particles.data(),
+		GL_STATIC_DRAW);
+
+	std::vector<SegmentMapping> mappings;
+	mappings.reserve(m_sphere_init_num_hairs * (m_sphere_init_particles_per_strand * 2 - 2));
+	std::vector<Particle2SegmentsList> particle2segments_map(num_particles);
+
+	// Create strands
+	float delta_x = m_hair_length / (m_sphere_head.radius * (float)m_sphere_init_particles_per_strand);
+	for (uint32_t root = 0; root < m_sphere_init_num_hairs; ++root) {
+		// mappings of root (maybe are not needed...)
+		mappings.push_back({ (uint32_t)indices.size(), 0 });
+		particle2segments_map[root].segment_mapping_idx =  (uint32_t)mappings.size() - 1;
+		particle2segments_map[root].num_segments = 1;
+
+		const glm::vec3 dir = particles[root].pos; // it is already normalized
+		for (uint32_t i = 1; i < m_sphere_init_particles_per_strand; ++i) {
+
+			const uint32_t particle_idx = (uint32_t)particles.size();
+			particles.push_back(
+				{
+					dir + dir * delta_x * (float)i,
+					0.0f
+				}
+			);
+
+			if (i == 1) {
+				indices.push_back(glm::ivec2(root, particle_idx));
+			}
+			else {
+				indices.push_back(glm::ivec2(particle_idx - 1, particle_idx));
+			}
+
+			// Always add previous segment
+			uint32_t num = 1;
+			uint32_t idx = (uint32_t)mappings.size();
+			mappings.push_back({ (uint32_t)indices.size() - 1, 1 });
+
+			if (i != m_sphere_init_particles_per_strand - 1) {
+				mappings.push_back({ (uint32_t)indices.size(), 0 });
+				num += 1;
+			}
+
+			particle2segments_map[particle_idx].segment_mapping_idx = idx;
+			particle2segments_map[particle_idx].num_segments = num;
+		}
+	}
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_particle_2_segments_list);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(Particle2SegmentsList) * particle2segments_map.size(),
+		particle2segments_map.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_segments_list_buffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(SegmentMapping) * mappings.size(),
+		mappings.data(), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_spring_indices_bo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(glm::ivec2) * indices.size(),
+		indices.data(), GL_STATIC_DRAW);
+	// Segment lengths
+	std::vector<float> original_lengths(m_system_config.num_segments);
+	for (uint32_t i = 0; i < m_system_config.num_segments; ++i) {
+		original_lengths[i] = delta_x;
+	}
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_original_lengths_buffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(float) * original_lengths.size(),
+		original_lengths.data(), GL_STATIC_DRAW);
+
+
+	// Update all particle positions before upload
+	for (uint32_t i = 0; i < num_particles; ++i) {
+		particles[i].pos = particles[i].pos * m_sphere_head.radius + m_sphere_head.pos;
+	}
+	glNamedBufferData(
+		m_vbo_particle_buffers[0], // buffer name
+		num_particles * sizeof(Particle),	// size
+		particles.data(),	// data
+		GL_DYNAMIC_DRAW
+	);
+	glNamedBufferData(
+		m_vbo_particle_buffers[1], // buffer name
+		num_particles * sizeof(Particle),	// size
+		particles.data(),	// data
+		GL_DYNAMIC_DRAW
+	);
+
+}
+
 void SpringSystem::update_interaction_data()
 {
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_sphere_ssb);
+	glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(Sphere), sizeof(Sphere), &m_sphere_head);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
 	m_advect_particle_program.use_program();
-	glUniform3fv(2, 1, glm::value_ptr(m_interact_point));
+	glUniform1ui(2, m_head_sphere_enabled ? 1 : 0);
 }

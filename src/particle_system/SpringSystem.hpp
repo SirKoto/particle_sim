@@ -3,6 +3,7 @@
 #include "graphics/ShaderProgram.hpp"
 #include "spring_types.in"
 #include "intersections.comp.in"
+#include "graphics/TriangleMesh.hpp"
 
 class SpringSystem {
 public:
@@ -47,6 +48,7 @@ private:
 	uint32_t m_sphere_ssb;
 	//bool m_intersect_sphere_enabled = true;
 	Sphere m_sphere;
+	Sphere m_sphere_head = { glm::vec3(2.0f, 5.0f, 5.0f), 1.0f};
 
 	bool m_draw_points = true;
 	bool m_draw_lines = true;
@@ -54,21 +56,31 @@ private:
 
 	enum class InitSystems {
 		eRope = 0,
+		eSphere = 1,
 	};
 
 	InitSystems m_init_system = InitSystems::eRope;
-
-	glm::vec3 m_interact_point = glm::vec3(2.0f, 5.0f, 5.0f);
+	bool m_head_sphere_enabled = false;
 
 	glm::vec3 m_rope_init_dir = glm::vec3(1.0f, 0.0f, 0.0f);
 	uint32_t m_rope_init_num_particles = 20;
 	float m_rope_init_length = 5.0f;
 	uint32_t m_rope_init_num_fixed_particles = 1;
 
+	uint32_t m_sphere_init_num_hairs = 100;
+	uint32_t m_sphere_init_particles_per_strand = 10;
+	float m_hair_length = 1.0f;
+
+	uint32_t m_sphere_vao;
+	ShaderProgram m_sphere_draw_program;
+	TriangleMesh m_sphere_mesh;
+
 	void initialize_system();
 	void update_sytem_config();
 	void update_intersection_sphere();
 
 	void init_system_rope();
+	void init_system_sphere();
 	void update_interaction_data();
+
 };
