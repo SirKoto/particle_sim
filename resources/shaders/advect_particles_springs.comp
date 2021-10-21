@@ -33,6 +33,14 @@ layout(std430, binding = BINDING_FIXED_POINTS) buffer FixedParticles {
     Particle fixed_p[];
 };
 
+layout(std430, binding = BINDING_PARTICLE_TO_SEGMENTS_LIST) buffer P2S {
+    Particle2SegmentsList part2segments[];
+};
+
+layout(std430, binding = BINDING_SEGMENTS_MAPPING_LIST) buffer SegmentsAdj {
+    SegmentMapping segment_ptr[];
+};
+
 layout(location = 0) uniform float dt;
 layout(location = 1) uniform uint intersect_sphere;
 layout(location = 2) uniform vec3 interact_pos;
@@ -49,6 +57,15 @@ void main() {
         return;
     }
 
+    // get forces
+    vec3 force = vec3(0.0);
+    const Particle2SegmentsList p2s = part2segments[idx];
+    for(uint i = 0; i < p2s.num_segments; ++i){
+        SegmentMapping map = segment_ptr[i + p2s.segment_mapping_idx];
+        vec3 f_tmp = forces[map.segment_idx];
+        force += (map.invert_force == 0) ? f_tmp : -f_tmp;
+    }
+
     // verlet solver
     const vec3 old_pos = particles_out[idx].pos;
     vec3 actual_pos = particles_in[idx].pos;
@@ -56,7 +73,7 @@ void main() {
         + config.k_v * (actual_pos - old_pos) 
         + dt * dt * (
             vec3(0.0,  -config.gravity, 0.0) 
-            + forces[idx] / config.particle_mass // forces to acceleration
+            + force / config.particle_mass // forces to acceleration
             );
     
     // Colide against 5 walls

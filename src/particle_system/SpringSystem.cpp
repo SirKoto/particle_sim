@@ -35,6 +35,8 @@ SpringSystem::SpringSystem()
 	glGenBuffers(1, &m_forces_buffer);
 	glGenBuffers(1, &m_original_lengths_buffer);
 	glGenBuffers(1, &m_fixed_points_buffer);
+	glGenBuffers(1, &m_particle_2_segments_list);
+	glGenBuffers(1, &m_segments_list_buffer);
 
 	glGenVertexArrays(1, &m_segment_vao);
 
@@ -78,7 +80,7 @@ void SpringSystem::update(float time, float dt)
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLES_OUT, m_vbo_particle_buffers[1 - m_flipflop_state]);
 
 	glClearNamedBufferSubData(m_forces_buffer, GL_R32F,
-		0, sizeof(glm::vec4) * m_system_config.num_particles, GL_RED, GL_FLOAT, nullptr);
+		0, sizeof(glm::vec4) * m_system_config.num_segments, GL_RED, GL_FLOAT, nullptr);
 	
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -191,7 +193,8 @@ void SpringSystem::reset_bindings() const
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SHAPE_SPHERE, m_sphere_ssb);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_ORIGINAL_LENGTHS, m_original_lengths_buffer);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_FIXED_POINTS, m_fixed_points_buffer);
-
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_PARTICLE_TO_SEGMENTS_LIST, m_particle_2_segments_list);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_SEGMENTS_MAPPING_LIST, m_segments_list_buffer);
 }
 
 void SpringSystem::initialize_system()
@@ -219,11 +222,11 @@ void SpringSystem::initialize_system()
 	// force buffers
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_forces_buffer);
 	glBufferData(GL_SHADER_STORAGE_BUFFER,
-		sizeof(glm::vec4) * m_system_config.num_particles,
+		sizeof(glm::vec4) * m_system_config.num_segments,
 		nullptr, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	glClearNamedBufferSubData(m_forces_buffer, GL_R32F,
-		0, sizeof(glm::vec4) * m_system_config.num_particles, GL_RED, GL_FLOAT, nullptr);
+		0, sizeof(glm::vec4) * m_system_config.num_segments, GL_RED, GL_FLOAT, nullptr);
 
 	update_sytem_config();
 	reset_bindings();
@@ -297,6 +300,34 @@ void SpringSystem::init_system_rope()
 		sizeof(float) * original_lengths.size(),
 		original_lengths.data(), GL_STATIC_DRAW);
 
+	// Point 2 segment
+	std::vector<SegmentMapping> mappings;
+	mappings.reserve(num_particles * 2 - 2);
+	std::vector<Particle2SegmentsList> particle2segments_map(num_particles);
+	for (uint32_t i = 0; i < num_particles; ++i) {
+		uint32_t num = 0;
+		uint32_t idx = (uint32_t)mappings.size();
+
+		if (i != 0) {
+			mappings.push_back({ i - 1, 1 });
+			num += 1;
+		}
+		if (i != num_particles - 1) {
+			mappings.push_back({ i, 0 });
+			num += 1;
+		}
+		
+		particle2segments_map[i].segment_mapping_idx = idx;
+		particle2segments_map[i].num_segments = num;
+	}
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_particle_2_segments_list);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(Particle2SegmentsList) * particle2segments_map.size(),
+		particle2segments_map.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_segments_list_buffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER,
+		sizeof(SegmentMapping) * mappings.size(),
+		mappings.data(), GL_STATIC_DRAW);
 	// Upload also fixed particles, modify original points
 	for (uint32_t i = 0; i < m_rope_init_num_fixed_particles; ++i) {
 		p[i].pos -= m_interact_point;

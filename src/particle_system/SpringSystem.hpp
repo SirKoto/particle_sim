@@ -34,6 +34,8 @@ private:
 	uint32_t m_forces_buffer;
 	uint32_t m_original_lengths_buffer;
 	uint32_t m_fixed_points_buffer;
+	uint32_t m_particle_2_segments_list;
+	uint32_t m_segments_list_buffer;
 
 
 	ShaderProgram m_basic_draw_point;

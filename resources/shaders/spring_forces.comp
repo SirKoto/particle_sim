@@ -1,5 +1,5 @@
 #version 430
-#extension GL_NV_shader_atomic_float : require
+//#extension GL_NV_shader_atomic_float : require
 layout(local_size_x = 32, local_size_y = 1) in;
 
 #include "../shader_includes/spring_types.in"
@@ -58,7 +58,9 @@ void main() {
         config.k_e * (dist - L[idx]) +
         config.k_d / dt * dot(dir, delta_v)
         );
-    const vec3 f1 = -f0;
+    
+    forces[idx] = f0;
+    /*const vec3 f1 = -f0;
     
     atomicAdd(forces[i0].x, f0.x);
     atomicAdd(forces[i0].y, f0.y);
@@ -67,7 +69,7 @@ void main() {
     atomicAdd(forces[i1].x, f1.x);
     atomicAdd(forces[i1].y, f1.y);
     atomicAdd(forces[i1].z, f1.z);
-
+    */
     //atomicAdd(particles[segments[idx].x].pos.y,  0.1 * dt);
     //atomicAdd(particles[segments[idx].y].pos.y,  -0.1 * dt);
 }
