@@ -40,48 +40,48 @@ GlobalContext::GlobalContext() {
     };
     m_mesh_mesh = TriangleMesh(proj_dir / "resources/ply/icosahedron.ply");
     m_mesh_mesh.upload_to_gpu();
-    m_mesh_draw_program = ShaderProgram(mesh_shaders.data(), (uint32_t)mesh_shaders.size());
-    glGenVertexArrays(1, &m_mesh_vao);
-    glBindVertexArray(m_mesh_vao);
-    m_mesh_mesh.gl_bind_to_vao();
-    glBindVertexArray(0);
+m_mesh_draw_program = ShaderProgram(mesh_shaders.data(), (uint32_t)mesh_shaders.size());
+glGenVertexArrays(1, &m_mesh_vao);
+glBindVertexArray(m_mesh_vao);
+m_mesh_mesh.gl_bind_to_vao();
+glBindVertexArray(0);
 
-    m_floor_mesh = TriangleMesh({ {0, 1, 2}, {0, 2, 3} },
-        { {0.f, 0.f, 0.f}, {0.f, 0.f, 1.f}, {1.f, 0.f, 1.f}, {1.f, 0.f, 0.f} });
-    m_floor_mesh.upload_to_gpu();
-    std::array<Shader, 2> floor_shaders = {
-        Shader((shad_dir / "floor.vert"), Shader::Type::Vertex),
-        Shader((shad_dir / "floor.frag"), Shader::Type::Fragment)
-    };
-    m_floor_draw_program = ShaderProgram(floor_shaders.data(), (uint32_t)floor_shaders.size());
-    glGenVertexArrays(1, &m_floor_vao);
-    glBindVertexArray(m_floor_vao);
-    m_floor_mesh.gl_bind_to_vao();
-    glBindVertexArray(0);
+m_floor_mesh = TriangleMesh({ {0, 1, 2}, {0, 2, 3} },
+    { {0.f, 0.f, 0.f}, {0.f, 0.f, 1.f}, {1.f, 0.f, 1.f}, {1.f, 0.f, 0.f} });
+m_floor_mesh.upload_to_gpu();
+std::array<Shader, 2> floor_shaders = {
+    Shader((shad_dir / "floor.vert"), Shader::Type::Vertex),
+    Shader((shad_dir / "floor.frag"), Shader::Type::Fragment)
+};
+m_floor_draw_program = ShaderProgram(floor_shaders.data(), (uint32_t)floor_shaders.size());
+glGenVertexArrays(1, &m_floor_vao);
+glBindVertexArray(m_floor_vao);
+m_floor_mesh.gl_bind_to_vao();
+glBindVertexArray(0);
 
-    // TODO: remove this
-    update_uniform_mesh();
-    m_particle_sys.set_mesh(m_mesh_mesh, get_mesh_transform());
+// TODO: remove this
+update_uniform_mesh();
+m_particle_sys.set_mesh(m_mesh_mesh, get_mesh_transform());
 
 
+m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+m_spring_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+
+
+// Set default bindings 
+switch (m_simulation_mode)
+{
+case SimulationMode::eParticle:
+    m_particle_sys.reset_bindings();
     m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+
+    break;
+case SimulationMode::eSprings:
+    m_spring_sys.reset_bindings();
     m_spring_sys.set_sphere(m_sphere_pos, m_sphere_radius);
 
-
-    // Set default bindings 
-    switch (m_simulation_mode)
-    {
-    case SimulationMode::eParticle:
-        m_particle_sys.reset_bindings();
-        m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
-
-        break;
-    case SimulationMode::eSprings:
-        m_spring_sys.reset_bindings();
-        m_spring_sys.set_sphere(m_sphere_pos, m_sphere_radius);
-
-        break;
-    }
+    break;
+}
 }
 
 void GlobalContext::update()
@@ -140,6 +140,10 @@ void GlobalContext::update()
 
         if (ImGui::BeginMenu("View"))
         {
+            if(ImGui::InputFloat("Line width", &m_line_width, 1.0f)) {
+                glLineWidth(m_line_width);
+            }
+
             ImGui::Checkbox("Scene info", &m_scene_window);
             ImGui::Checkbox("ImGui Demo Window", &m_show_imgui_demo_window);
             ImGui::Checkbox("Camera info", &m_show_camera_window);
@@ -304,7 +308,7 @@ void GlobalContext::render()
         break;
     case SimulationMode::eSprings:
 
-        m_spring_sys.gl_render(view_proj_mat);
+        m_spring_sys.gl_render(view_proj_mat, m_camera.get_eye());
         break;
     }
 

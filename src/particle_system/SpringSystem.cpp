@@ -60,7 +60,7 @@ SpringSystem::SpringSystem()
 
 	std::array<Shader, 4> hair_shaders = {
 		Shader((shad_dir / "hair.vert"), Shader::Type::Vertex),
-		Shader((shad_dir / "spring_point.frag"), Shader::Type::Fragment),
+		Shader((shad_dir / "hair.frag"), Shader::Type::Fragment),
 		Shader((shad_dir / "hair.tesc"), Shader::Type::TessellationControl),
 		Shader((shad_dir / "hair.tese"), Shader::Type::TessellationEvaluation)
 	};
@@ -77,8 +77,8 @@ SpringSystem::SpringSystem()
 	m_system_config.gravity = 9.8f;
 	m_system_config.simulation_space_size = 10.0f;
 	m_system_config.bounce = 0.5f;
-	m_system_config.k_e = 20.f;
-	m_system_config.k_d = 5.0f;
+	m_system_config.k_e = 2000.f;
+	m_system_config.k_d = 25.0f;
 	m_system_config.particle_mass = 1.0f;
 	m_system_config.num_fixed_particles = 1;
 	m_system_config.num_particles_per_strand = 0;
@@ -130,7 +130,7 @@ void SpringSystem::update(float time, float dt)
 	m_flipflop_state = !m_flipflop_state;
 }
 
-void SpringSystem::gl_render(const glm::mat4& proj_view)
+void SpringSystem::gl_render(const glm::mat4& proj_view, const glm::vec3& eye_world)
 {
 
 	// Draw sphere
@@ -167,13 +167,12 @@ void SpringSystem::gl_render(const glm::mat4& proj_view)
 
 		m_hair_draw_program.use_program();
 		glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(proj_view));
-		//glPatchParameteri(GL_PATCH_VERTICES, m_system_config.num_particles_per_strand);
-		glPatchParameteri(GL_PATCH_VERTICES, 3);
-		/*glDrawElements(GL_PATCHES,
-			2 * m_system_config.num_segments,
-			GL_UNSIGNED_INT, nullptr);
-		*/
+		glUniform3fv(2, 1, glm::value_ptr(eye_world));
+		glUniform1f(3, m_hair_specular_alpha);
+		glUniform3fv(4, 1, glm::value_ptr(m_hair_specular));
+		glUniform3fv(5, 1, glm::value_ptr(m_hair_diffuse));
 
+		glPatchParameteri(GL_PATCH_VERTICES, 3);
 		
 		//glDrawArrays(GL_PATCHES, 0, 3);
 		glBindVertexArray(m_patches_vao);
@@ -264,6 +263,10 @@ void SpringSystem::imgui_draw()
 	}
 	else if (m_draw_mode == DrawMode::eTessellation) {
 		ImGui::PushID("Tessellation");
+
+		ImGui::ColorEdit3("Diffuse color", glm::value_ptr(m_hair_diffuse));
+		ImGui::ColorEdit3("Specular color", glm::value_ptr(m_hair_specular));
+		ImGui::InputFloat("Alpha specular", &m_hair_specular_alpha, 1.0f);
 
 		ImGui::Checkbox("Draw Points", &m_draw_points);
 

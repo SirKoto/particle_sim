@@ -15,7 +15,7 @@ public:
 
 	void update(float time, float dt);
 
-	void gl_render(const glm::mat4& proj_view);
+	void gl_render(const glm::mat4& proj_view, const glm::vec3& eye_world);
 
 	void imgui_draw();
 
@@ -89,6 +89,10 @@ private:
 	uint32_t m_sphere_vao;
 	ShaderProgram m_sphere_draw_program;
 	TriangleMesh m_sphere_mesh;
+
+	float m_hair_specular_alpha = 60.0f;
+	glm::vec3 m_hair_specular = glm::vec3(0.2196f, 0.1686f, 0.149f);
+	glm::vec3 m_hair_diffuse = glm::vec3(0.1176f, 0.0235f, 0.012f);
 
 	void initialize_system();
 	void update_sytem_config();

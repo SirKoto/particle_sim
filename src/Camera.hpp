@@ -16,6 +16,8 @@ public:
 	// Render some information into the UI
 	void renderImGui();
 
+	const glm::vec3& get_eye() const { return mPosition; }
+
 private:
 	glm::vec3 mPosition;
 	glm::vec3 mFront;

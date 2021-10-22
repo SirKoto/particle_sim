@@ -25,7 +25,7 @@ set(COPY_DATA
     ${SHADER_PATH}/mesh.vert   ${SHADER_PATH}/mesh.frag
     ${SHADER_PATH}/floor.vert   ${SHADER_PATH}/floor.frag
     ${SHADER_PATH}/spring_point.vert   ${SHADER_PATH}/spring_point.frag
-    ${SHADER_PATH}/hair.vert
+    ${SHADER_PATH}/hair.vert    ${SHADER_PATH}/hair.frag
     ${SHADER_PATH}/hair.tesc   ${SHADER_PATH}/hair.tese
 
 

@@ -57,6 +57,8 @@ private:
 
 	double m_max_fps = 120.0;
 
+	float m_line_width = 1.0f;
+
 	bool m_draw_sphere = true;
 	uint32_t m_sphere_vao;
 	ShaderProgram m_sphere_draw_program;
