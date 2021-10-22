@@ -190,6 +190,8 @@ void SpringSystem::gl_render(const glm::mat4& proj_view)
 		}
 
 	}
+
+	glBindVertexArray(0);
 }
 
 void SpringSystem::imgui_draw()
@@ -544,6 +546,8 @@ void SpringSystem::init_system_sphere()
 	mappings.reserve(m_sphere_init_num_hairs * (m_sphere_init_particles_per_strand * 2 - 2));
 	std::vector<Particle2SegmentsList> particle2segments_map(num_particles);
 
+	std::vector<glm::ivec3> patch_indices; patch_indices.reserve(m_system_config.num_particles);
+
 	// Create strands
 	float delta_x = m_hair_length / (m_sphere_head.radius * (float)m_sphere_init_particles_per_strand);
 	for (uint32_t root = 0; root < m_sphere_init_num_hairs; ++root) {
@@ -551,6 +555,27 @@ void SpringSystem::init_system_sphere()
 		mappings.push_back({ (uint32_t)indices.size(), 0 });
 		particle2segments_map[root].segment_mapping_idx =  (uint32_t)mappings.size() - 1;
 		particle2segments_map[root].num_segments = 1;
+
+		// Add patch
+		if(m_sphere_init_particles_per_strand > 1){
+			// Add first segment
+			const uint32_t start = (int32_t)particles.size();
+			patch_indices.push_back({ root, root, start });
+			for (uint32_t i = 0; i < m_sphere_init_particles_per_strand - 2; ++i) {
+				const uint32_t idx = start + i;
+				if (i == 0) {
+					patch_indices.push_back({ root, idx, idx + 1});
+				}
+				else {
+					patch_indices.push_back({ idx -1, idx, idx + 1 });
+				}
+
+				if (i == m_sphere_init_particles_per_strand - 3) {
+					patch_indices.push_back({ idx, idx + 1, idx + 1 });
+				}
+			}
+		}
+
 
 		const glm::vec3 dir = particles[root].pos; // it is already normalized
 		for (uint32_t i = 1; i < m_sphere_init_particles_per_strand; ++i) {
@@ -597,6 +622,16 @@ void SpringSystem::init_system_sphere()
 	glBufferData(GL_SHADER_STORAGE_BUFFER,
 		sizeof(glm::ivec2) * indices.size(),
 		indices.data(), GL_STATIC_DRAW);
+
+	m_num_elements_patches = 3 * (uint32_t)patch_indices.size();
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_patches_indices_bo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+		sizeof(patch_indices[0]) * patch_indices.size(),
+		patch_indices.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 	// Segment lengths
 	std::vector<float> original_lengths(m_system_config.num_segments);
 	for (uint32_t i = 0; i < m_system_config.num_segments; ++i) {
