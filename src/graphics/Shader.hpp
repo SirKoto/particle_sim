@@ -11,7 +11,9 @@ public:
 	enum class Type {
 		Vertex,
 		Fragment,
-		Compute
+		Compute,
+		TessellationControl,
+		TessellationEvaluation,
 	};
 
 	Shader() = default;

@@ -33,6 +33,7 @@ private:
 	bool m_flipflop_state = false;
 	uint32_t m_vbo_particle_buffers[2];
 	uint32_t m_spring_indices_bo;
+	uint32_t m_patches_indices_bo;
 	uint32_t m_forces_buffer;
 	uint32_t m_original_lengths_buffer;
 	uint32_t m_fixed_points_buffer;
@@ -41,10 +42,14 @@ private:
 
 
 	ShaderProgram m_basic_draw_point;
+	ShaderProgram m_hair_draw_program;
 	ShaderProgram m_advect_particle_program;
 	ShaderProgram m_spring_force_program;
 
 	uint32_t m_segment_vao;
+	uint32_t m_patches_vao;
+
+	uint32_t m_num_elements_patches = 0;
 
 	uint32_t m_sphere_ssb;
 	//bool m_intersect_sphere_enabled = true;
@@ -63,6 +68,12 @@ private:
 		eSphere = 1,
 	};
 
+	enum class DrawMode {
+		ePolylines = 0,
+		eTessellation = 1,
+	};
+
+	DrawMode m_draw_mode = DrawMode::ePolylines;
 	InitSystems m_init_system = InitSystems::eRope;
 	bool m_head_sphere_enabled = false;
 

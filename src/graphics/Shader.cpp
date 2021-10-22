@@ -99,8 +99,14 @@ uint32_t Shader::get_gl_shader_type() const
 	case Type::Fragment:
 		return GL_FRAGMENT_SHADER;
 	case Type::Compute:
-	default:
 		return GL_COMPUTE_SHADER;
+	case Type::TessellationControl:
+		return GL_TESS_CONTROL_SHADER;
+	case Type::TessellationEvaluation:
+		return GL_TESS_EVALUATION_SHADER;
+	default:
+		assert(false);
 	}
+	return 0;
 }
 

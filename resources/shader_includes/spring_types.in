@@ -25,7 +25,7 @@ struct SpringSystemConfig {
     float k_d; // damping spring
     float particle_mass;
     uint32_t num_fixed_particles;
-    float padding[1];
+    uint32_t num_particles_per_strand;
 };
 
 struct Particle {

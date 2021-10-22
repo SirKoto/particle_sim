@@ -31,6 +31,7 @@ SpringSystem::SpringSystem()
 	glGenBuffers(2, m_vbo_particle_buffers);
 	glGenBuffers(1, &m_system_config_bo);
 	glGenBuffers(1, &m_spring_indices_bo);
+	glGenBuffers(1, &m_patches_indices_bo);
 	glGenBuffers(1, &m_sphere_ssb);
 	glGenBuffers(1, &m_forces_buffer);
 	glGenBuffers(1, &m_original_lengths_buffer);
@@ -39,10 +40,13 @@ SpringSystem::SpringSystem()
 	glGenBuffers(1, &m_segments_list_buffer);
 
 	glGenVertexArrays(1, &m_segment_vao);
+	glGenVertexArrays(1, &m_patches_vao);
 
 	// Bind indices
 	glBindVertexArray(m_segment_vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spring_indices_bo);
+	glBindVertexArray(m_patches_vao);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_patches_indices_bo);
 	glBindVertexArray(0);
 
 	// Generate sphere
@@ -53,6 +57,14 @@ SpringSystem::SpringSystem()
 		Shader((shad_dir / "sphere.frag"), Shader::Type::Fragment)
 	};
 	m_sphere_draw_program = ShaderProgram(sphere_shaders.data(), (uint32_t)sphere_shaders.size());
+
+	std::array<Shader, 4> hair_shaders = {
+		Shader((shad_dir / "hair.vert"), Shader::Type::Vertex),
+		Shader((shad_dir / "spring_point.frag"), Shader::Type::Fragment),
+		Shader((shad_dir / "hair.tesc"), Shader::Type::TessellationControl),
+		Shader((shad_dir / "hair.tese"), Shader::Type::TessellationEvaluation)
+	};
+	m_hair_draw_program = ShaderProgram(hair_shaders.data(), (uint32_t)hair_shaders.size());
 
 	glGenVertexArrays(1, &m_sphere_vao);
 	glBindVertexArray(m_sphere_vao);
@@ -69,6 +81,7 @@ SpringSystem::SpringSystem()
 	m_system_config.k_d = 5.0f;
 	m_system_config.particle_mass = 1.0f;
 	m_system_config.num_fixed_particles = 1;
+	m_system_config.num_particles_per_strand = 0;
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_system_config_bo);
 	glBufferData(GL_SHADER_STORAGE_BUFFER,
@@ -133,19 +146,49 @@ void SpringSystem::gl_render(const glm::mat4& proj_view)
 	}
 
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
-	if (m_draw_points || m_draw_lines) {
-		m_basic_draw_point.use_program();
+
+	if (m_draw_mode == DrawMode::ePolylines) {
+		if (m_draw_points || m_draw_lines) {
+			m_basic_draw_point.use_program();
+			glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(proj_view));
+		}
+		if (m_draw_points) {
+			glPointSize(10.0f);
+			glDrawArrays(GL_POINTS, 0, m_system_config.num_particles);
+		}
+		if (m_draw_lines) {
+			glBindVertexArray(m_segment_vao);
+			glDrawElements(GL_LINES,
+				2 * m_system_config.num_segments,
+				GL_UNSIGNED_INT, nullptr);
+		}
+	}
+	else if (m_draw_mode == DrawMode::eTessellation) {
+
+		m_hair_draw_program.use_program();
 		glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(proj_view));
-	}
-	if (m_draw_points) {
-		glPointSize(10.0f);
-		glDrawArrays(GL_POINTS, 0, m_system_config.num_particles);
-	}
-	if (m_draw_lines) {
-		glBindVertexArray(m_segment_vao);
-		glDrawElements(GL_LINES,
+		//glPatchParameteri(GL_PATCH_VERTICES, m_system_config.num_particles_per_strand);
+		glPatchParameteri(GL_PATCH_VERTICES, 3);
+		/*glDrawElements(GL_PATCHES,
 			2 * m_system_config.num_segments,
 			GL_UNSIGNED_INT, nullptr);
+		*/
+
+		
+		//glDrawArrays(GL_PATCHES, 0, 3);
+		glBindVertexArray(m_patches_vao);
+		glDrawElements(GL_PATCHES,
+			m_num_elements_patches,
+			GL_UNSIGNED_INT, nullptr);
+		
+		if (m_draw_points) {
+			m_basic_draw_point.use_program();
+			glBindVertexArray(m_segment_vao);
+			glPointSize(10.0f);
+			glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(proj_view));
+			glDrawArrays(GL_POINTS, 0, m_system_config.num_particles);
+		}
+
 	}
 }
 
@@ -206,8 +249,26 @@ void SpringSystem::imgui_draw()
 		update_intersection_sphere();
 	}
 
-	ImGui::Checkbox("Draw Points", &m_draw_points);
-	ImGui::Checkbox("Draw Lines", &m_draw_lines);
+	ImGui::Separator();
+	
+	ImGui::Combo("Draw mode", (int*)&m_draw_mode, "Polyline\0Tessellation");
+	if (m_draw_mode == DrawMode::ePolylines) {
+		ImGui::PushID("polyline");
+
+		ImGui::Checkbox("Draw Points", &m_draw_points);
+		ImGui::Checkbox("Draw Lines", &m_draw_lines);
+
+		ImGui::PopID();
+	}
+	else if (m_draw_mode == DrawMode::eTessellation) {
+		ImGui::PushID("Tessellation");
+
+		ImGui::Checkbox("Draw Points", &m_draw_points);
+
+		ImGui::PopID();
+	}
+
+
 	ImGui::Separator();
 
 	if (ImGui::Combo("Init system", reinterpret_cast<int*>(&m_init_system), "Rope\0Sphere\0")) {
@@ -334,6 +395,7 @@ void SpringSystem::init_system_rope()
 	const uint32_t num_particles = m_system_config.num_particles = m_rope_init_num_particles;
 	m_system_config.num_segments = num_particles - 1;
 	m_system_config.num_fixed_particles = m_rope_init_num_fixed_particles;
+	m_system_config.num_particles_per_strand = num_particles;
 
 	std::vector<Particle> p(num_particles);
 	const glm::vec3 dir = glm::normalize(m_rope_init_dir);
@@ -364,6 +426,21 @@ void SpringSystem::init_system_rope()
 	glBufferData(GL_SHADER_STORAGE_BUFFER,
 		sizeof(glm::ivec2) * indices.size(),
 		indices.data(), GL_STATIC_DRAW);
+
+	// Patch indices
+	std::vector<glm::ivec3> patch_indices; patch_indices.reserve(m_system_config.num_particles);
+	patch_indices.push_back({0, 0, 1 });
+	for (uint32_t i = 0; i < m_system_config.num_particles - 2; i += 1) {
+		patch_indices.push_back({ i, i + 1, i + 2 });
+	}
+	patch_indices.push_back({ m_system_config.num_particles - 2, m_system_config.num_particles - 1 , m_system_config.num_particles - 1 });
+
+	m_num_elements_patches =  3 * (uint32_t)patch_indices.size();
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_patches_indices_bo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+		sizeof(patch_indices[0]) * patch_indices.size(),
+		patch_indices.data(), GL_STATIC_DRAW);
 
 	// Segment lengths
 	std::vector<float> original_lengths(m_system_config.num_segments);
@@ -447,7 +524,8 @@ void SpringSystem::init_system_sphere()
 
 	const uint32_t num_particles = m_system_config.num_particles = m_sphere_init_num_hairs * m_sphere_init_particles_per_strand;
 	m_system_config.num_segments = m_sphere_init_num_hairs * (m_sphere_init_particles_per_strand - 1);
-	
+	m_system_config.num_particles_per_strand = m_sphere_init_particles_per_strand;
+
 	std::vector<Particle> particles;
 	particles.reserve(num_particles);
 	std::vector<glm::ivec2> indices; indices.reserve(m_system_config.num_segments);
