@@ -59,6 +59,7 @@ private:
 	glm::vec3 m_rotation_axis = glm::vec3(1.0f, 0.0f, 0.0f);
 	float m_rotation_rate = 0.01f;
 
+	bool m_draw_head = true;
 	bool m_draw_points = true;
 	bool m_draw_lines = true;
 	bool m_intersect_sphere = true;

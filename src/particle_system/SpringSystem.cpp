@@ -134,7 +134,7 @@ void SpringSystem::gl_render(const glm::mat4& proj_view, const glm::vec3& eye_wo
 {
 
 	// Draw sphere
-	if (m_init_system == InitSystems::eSphere) {
+	if (m_init_system == InitSystems::eSphere && m_draw_head) {
 		m_sphere_draw_program.use_program();
 		glBindVertexArray(m_sphere_vao);
 		glUniform3fv(0, 1, glm::value_ptr(m_sphere_head.pos));
@@ -272,6 +272,9 @@ void SpringSystem::imgui_draw()
 
 		ImGui::PopID();
 	}
+	if (m_init_system == InitSystems::eSphere) {
+		ImGui::Checkbox("Draw head sphere", &m_draw_head);
+	}
 
 
 	ImGui::Separator();
@@ -292,7 +295,7 @@ void SpringSystem::imgui_draw()
 	}
 	else if (m_init_system == InitSystems::eSphere) {
 		ImGui::PushID("SphereInit");
-		ImGui::DragFloat("Radius", &m_sphere_head.radius, 0.01f, 0.0f, FLT_MAX);
+		//ImGui::DragFloat("Radius", &m_sphere_head.radius, 0.01f, 0.0f, FLT_MAX);
 		ImGui::InputScalar("Num hairs", ImGuiDataType_U32, &m_sphere_init_num_hairs);
 		ImGui::InputScalar("Particles per strand", ImGuiDataType_U32, &m_sphere_init_particles_per_strand);
 		ImGui::InputFloat("Hair length", &m_hair_length, 0.1f);
