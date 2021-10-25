@@ -77,6 +77,7 @@ SpringSystem::SpringSystem()
 	m_system_config.gravity = 9.8f;
 	m_system_config.simulation_space_size = 10.0f;
 	m_system_config.bounce = 0.5f;
+	m_system_config.friction = 0.02f;
 	m_system_config.k_e = 2000.f;
 	m_system_config.k_d = 25.0f;
 	m_system_config.particle_mass = 1.0f;
@@ -203,6 +204,7 @@ void SpringSystem::imgui_draw()
 	update |= ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
 	update |= ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0001f, 0.0f, "%.5f");
 	update |= ImGui::InputFloat("Bounciness", &m_system_config.bounce, 0.1f);
+	update |= ImGui::InputFloat("Friction", &m_system_config.friction, 0.01f);
 
 	update |= ImGui::DragFloat("K elastic", &m_system_config.k_e, 0.1f);
 	update |= ImGui::DragFloat("K damping", &m_system_config.k_d, 0.1f);

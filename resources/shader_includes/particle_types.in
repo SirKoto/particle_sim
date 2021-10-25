@@ -15,9 +15,11 @@ struct ParticleSystemConfig {
     float gravity;
     float particle_size;
     float simulation_space_size;
+
     float k_v;
     float bounce;
-    float padding[2];
+    float friction;
+    float padding;
 };
 
 struct Particle {

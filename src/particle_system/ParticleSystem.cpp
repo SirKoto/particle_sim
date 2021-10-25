@@ -62,6 +62,8 @@ ParticleSystem::ParticleSystem()
 	m_system_config.simulation_space_size = 10.0f;
 	m_system_config.k_v = 0.9999f;
 	m_system_config.bounce = 0.5f;
+	m_system_config.friction = 0.01f;
+
 
 	m_spawner_config.pos = glm::vec3(5.0f);
 	m_spawner_config.mean_lifetime = 2.0f;
@@ -167,6 +169,7 @@ void ParticleSystem::imgui_draw()
 	update |= ImGui::InputFloat("Simulation space size", &m_system_config.simulation_space_size, 0.1f);
 	update |= ImGui::InputFloat("Verlet damping", &m_system_config.k_v, 0.0001f, 0.0f, "%.5f");
 	update |= ImGui::InputFloat("Bounciness", &m_system_config.bounce, 0.1f);
+	update |= ImGui::InputFloat("Friction", &m_system_config.friction, 0.01f);
 
 	ImGui::Separator();
 	if (ImGui::TreeNode("Spawner Config")) {

@@ -20,12 +20,15 @@ struct SpringSystemConfig {
     float simulation_space_size;
     float k_v;
     float bounce;
-    float k_e; // elastic spring
+    float friction;
 
+    float k_e; // elastic spring
     float k_d; // damping spring
     float particle_mass;
     uint32_t num_fixed_particles;
+
     uint32_t num_particles_per_strand;
+    float padding[3];
 };
 
 struct Particle {
