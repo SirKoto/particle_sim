@@ -211,7 +211,7 @@ void SpringSystem::imgui_draw()
 	update |= ImGui::DragFloat("Particle mass", &m_system_config.particle_mass, 0.1f);
 
 	if (update) {
-		update_sytem_config();
+		update_system_config();
 	}
 
 	ImGui::Text("Interaction:");
@@ -374,11 +374,11 @@ void SpringSystem::initialize_system()
 	glClearNamedBufferSubData(m_forces_buffer, GL_R32F,
 		0, sizeof(glm::vec4) * m_system_config.num_segments, GL_RED, GL_FLOAT, nullptr);
 
-	update_sytem_config();
+	update_system_config();
 	reset_bindings();
 }
 
-void SpringSystem::update_sytem_config()
+void SpringSystem::update_system_config()
 {
 	glNamedBufferSubData(
 		m_system_config_bo, // buffer name

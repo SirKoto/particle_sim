@@ -96,7 +96,7 @@ private:
 	glm::vec3 m_hair_diffuse = glm::vec3(0.1176f, 0.0235f, 0.012f);
 
 	void initialize_system();
-	void update_sytem_config();
+	void update_system_config();
 	void update_intersection_sphere();
 
 	void init_system_rope();

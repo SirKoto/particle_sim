@@ -32,7 +32,7 @@ private:
 	bool m_flipflop_state = false;
 	uint32_t m_vbo_particle_buffers[2];
 	uint32_t m_spring_indices_bo;
-	uint32_t m_patches_indices_bo;
+	// uint32_t m_patches_indices_bo;
 	uint32_t m_forces_buffer;
 	uint32_t m_original_lengths_buffer;
 	uint32_t m_fixed_points_buffer;
@@ -43,4 +43,18 @@ private:
 	ShaderProgram m_advect_particle_program;
 	ShaderProgram m_spring_force_program;
 
+	uint32_t m_sphere_ssb;
+
+	uint32_t m_segment_vao;
+
+	Sphere m_sphere_head = { glm::vec3(2.0f, 5.0f, 5.0f), 1.0f };
+
+
+	bool m_draw_points = true;
+	bool m_draw_lines = true;
+	bool m_intersect_sphere = true;
+
+	void initialize_system();
+	void update_interaction_data();
+	void update_system_config();
 };

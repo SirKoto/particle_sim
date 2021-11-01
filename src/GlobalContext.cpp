@@ -127,7 +127,7 @@ void GlobalContext::update()
     {
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10);
 
-        if (ImGui::Combo("##combo_mode", (int32_t*)&m_simulation_mode, "Particles\0Springs")) {
+        if (ImGui::Combo("##combo_mode", (int32_t*)&m_simulation_mode, "Particles\0Springs\0Cloth")) {
             switch (m_simulation_mode)
             {
             case SimulationMode::eParticle:
