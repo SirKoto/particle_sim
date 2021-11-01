@@ -189,22 +189,24 @@ void ClothSystem::initialize_system()
 		}
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+		glm::vec2 cloth_size = glm::vec2(3.0f);
 		glm::vec3 rope_init_dir = glm::vec3(1.0f, 0.0f, 0.0f);
-		uint32_t rope_init_num_particles = 20;
-		float rope_init_length = 5.0f;
-		uint32_t rope_init_num_fixed_particles = 1;
 
 		{
-			const uint32_t num_particles = m_system_config.num_particles = rope_init_num_particles;
-			m_system_config.num_segments = num_particles - 1;
-			m_system_config.num_fixed_particles = rope_init_num_fixed_particles;
-			m_system_config.num_particles_per_strand = num_particles;
+			const uint32_t num_particles = m_system_config.num_particles = m_resolution_cloth.x * m_resolution_cloth.y;
+			// TODO: m_system_config.num_segments = num_particles - 1;
+			m_system_config.num_fixed_particles = m_resolution_cloth.x;
+			m_system_config.num_particles_per_strand = 0; //todo: delete
 
-			std::vector<Particle> p(num_particles);
-			const glm::vec3 dir = glm::normalize(rope_init_dir);
-			float delta_x = rope_init_length / (float)rope_init_num_particles;
-			for (uint32_t i = 0; i < num_particles; ++i) {
-				p[i].pos = m_sphere_head.pos + dir * ((float)i * delta_x);
+			std::vector<Particle> p; p.reserve(num_particles);
+			// const glm::vec3 dir = glm::normalize(rope_init_dir);
+			float delta_x = cloth_size.x / (float)m_resolution_cloth.x;
+			float delta_y = cloth_size.y / (float)m_resolution_cloth.y;
+			for (uint32_t j = 0; j < m_resolution_cloth.y; ++j) {
+				for (uint32_t i = 0; i < m_resolution_cloth.x; ++i) {
+					p.push_back({});
+					p.back().pos = m_sphere_head.pos + glm::vec3((float)i * delta_x, 0.0f, (float)j * delta_y);
+				}
 			}
 			glNamedBufferData(
 				m_vbo_particle_buffers[0], // buffer name
@@ -220,10 +222,51 @@ void ClothSystem::initialize_system()
 			);
 
 			// Segment indices
-			std::vector<glm::ivec2> indices(m_system_config.num_segments);
-			for (uint32_t i = 0; i < m_system_config.num_segments; ++i) {
-				indices[i] = glm::ivec2(i, i + 1);
+			std::vector<glm::ivec2> indices;
+			std::vector<std::vector<SegmentMapping>> mappings_buffer(num_particles);
+			uint32_t total_mappings = 0;
+			for (uint32_t j = 0; j < m_resolution_cloth.y; ++j) {
+				for (uint32_t i = 0; i < m_resolution_cloth.x; ++i) {
+					uint32_t base = j * m_resolution_cloth.x + i;
+
+					if (i != m_resolution_cloth.x - 1) {
+						uint32_t right = j * m_resolution_cloth.x + i + 1;
+
+						uint32_t idx = (uint32_t)indices.size();
+						indices.push_back(glm::ivec2(base, right));
+						mappings_buffer[base].push_back({ idx, 0 });
+						mappings_buffer[right].push_back({ idx, 1 });
+
+						total_mappings += 2;
+					}
+					if (j != m_resolution_cloth.y - 1) {
+						uint32_t up = (j + 1) * m_resolution_cloth.x + i;
+
+						uint32_t idx = (uint32_t)indices.size();
+						indices.push_back(glm::ivec2(base, up));
+
+						mappings_buffer[base].push_back({ idx, 0 });
+						mappings_buffer[up].push_back({ idx, 1 });
+
+						total_mappings += 2;
+
+					}
+				}
 			}
+
+			std::vector<Particle2SegmentsList> particle2segments_map(num_particles);
+			std::vector<SegmentMapping> mappings;
+			mappings.reserve(total_mappings);
+			for (uint32_t i = 0; i < num_particles; ++i) {
+				uint32_t idx = (uint32_t)mappings.size();
+				mappings.insert(std::end(mappings),
+					std::begin(mappings_buffer[i]), std::end(mappings_buffer[i]));
+
+				particle2segments_map[i] = { idx, (uint32_t)mappings_buffer[i].size() };
+			}
+
+
+			m_system_config.num_segments = (uint32_t)indices.size();
 
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_spring_indices_bo);
 			glBufferData(GL_SHADER_STORAGE_BUFFER,
@@ -257,26 +300,7 @@ void ClothSystem::initialize_system()
 				sizeof(float) * original_lengths.size(),
 				original_lengths.data(), GL_STATIC_DRAW);
 
-			// Point 2 segment
-			std::vector<SegmentMapping> mappings;
-			mappings.reserve(num_particles * 2 - 2);
-			std::vector<Particle2SegmentsList> particle2segments_map(num_particles);
-			for (uint32_t i = 0; i < num_particles; ++i) {
-				uint32_t num = 0;
-				uint32_t idx = (uint32_t)mappings.size();
-
-				if (i != 0) {
-					mappings.push_back({ i - 1, 1 });
-					num += 1;
-				}
-				if (i != num_particles - 1) {
-					mappings.push_back({ i, 0 });
-					num += 1;
-				}
-
-				particle2segments_map[i].segment_mapping_idx = idx;
-				particle2segments_map[i].num_segments = num;
-			}
+			
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_particle_2_segments_list);
 			glBufferData(GL_SHADER_STORAGE_BUFFER,
 				sizeof(Particle2SegmentsList) * particle2segments_map.size(),
@@ -286,12 +310,12 @@ void ClothSystem::initialize_system()
 				sizeof(SegmentMapping) * mappings.size(),
 				mappings.data(), GL_STATIC_DRAW);
 			// Upload also fixed particles, modify original points
-			for (uint32_t i = 0; i < rope_init_num_fixed_particles; ++i) {
+			for (uint32_t i = 0; i < m_system_config.num_fixed_particles; ++i) {
 				p[i].pos -= m_sphere_head.pos;
 			}
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_fixed_points_buffer);
 			glBufferData(GL_SHADER_STORAGE_BUFFER,
-				sizeof(Particle) * rope_init_num_fixed_particles,
+				sizeof(Particle) * m_system_config.num_fixed_particles,
 				p.data(),
 				GL_STATIC_DRAW);
 		}

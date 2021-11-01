@@ -49,6 +49,7 @@ private:
 
 	Sphere m_sphere_head = { glm::vec3(2.0f, 5.0f, 5.0f), 1.0f };
 
+	glm::uvec2 m_resolution_cloth = glm::uvec2(10, 10);
 
 	bool m_draw_points = true;
 	bool m_draw_lines = true;
