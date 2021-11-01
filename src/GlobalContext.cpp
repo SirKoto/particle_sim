@@ -65,8 +65,8 @@ m_particle_sys.set_mesh(m_mesh_mesh, get_mesh_transform());
 
 
 m_particle_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+m_cloth_sys.set_sphere(m_sphere_pos, m_sphere_radius);
 m_spring_sys.set_sphere(m_sphere_pos, m_sphere_radius);
-
 
 // Set default bindings 
 switch (m_simulation_mode)
@@ -80,6 +80,10 @@ case SimulationMode::eSprings:
     m_spring_sys.reset_bindings();
     m_spring_sys.set_sphere(m_sphere_pos, m_sphere_radius);
 
+    break;
+case SimulationMode::eCloth:
+    m_cloth_sys.reset_bindings();
+    m_cloth_sys.set_sphere(m_sphere_pos, m_sphere_radius);
     break;
 }
 }
@@ -112,6 +116,9 @@ void GlobalContext::update()
         case SimulationMode::eSprings:
             m_spring_sys.update(time, delta_time);
             break;
+        case SimulationMode::eCloth:
+            m_cloth_sys.update(time, delta_time);
+            break;
         }
     }
 
@@ -132,6 +139,10 @@ void GlobalContext::update()
                 m_spring_sys.reset_bindings();
                 m_spring_sys.set_sphere(m_sphere_pos, m_sphere_radius);
 
+                break;
+            case SimulationMode::eCloth:
+                m_cloth_sys.reset_bindings();
+                m_cloth_sys.set_sphere(m_sphere_pos, m_sphere_radius);
                 break;
             }
         }
@@ -199,6 +210,9 @@ void GlobalContext::update()
                 case SimulationMode::eSprings:
                     m_spring_sys.set_sphere(m_sphere_pos, m_sphere_radius);
                     break;
+                case SimulationMode::eCloth:
+                    m_cloth_sys.set_sphere(m_sphere_pos, m_sphere_radius);
+                    break;
                 }
             }
             ImGui::PopID();
@@ -240,6 +254,9 @@ void GlobalContext::update()
             break;
         case SimulationMode::eSprings:
             m_spring_sys.imgui_draw();
+            break;
+        case SimulationMode::eCloth:
+            m_cloth_sys.imgui_draw();
             break;
         }
         ImGui::PopItemWidth();
@@ -289,6 +306,9 @@ void GlobalContext::render()
         case SimulationMode::eSprings:
             sim_space_size = m_spring_sys.get_simulation_space_size();
             break;
+        case SimulationMode::eCloth:
+            sim_space_size = m_cloth_sys.get_simulation_space_size();
+            break;
         }
 
 
@@ -309,6 +329,10 @@ void GlobalContext::render()
     case SimulationMode::eSprings:
 
         m_spring_sys.gl_render(view_proj_mat, m_camera.get_eye());
+        break;
+    case SimulationMode::eCloth:
+
+        m_cloth_sys.gl_render(view_proj_mat, m_camera.get_eye());
         break;
     }
 

@@ -6,8 +6,7 @@
 #include "graphics/ShaderProgram.hpp"
 #include "particle_system/ParticleSystem.hpp"
 #include "particle_system/SpringSystem.hpp"
-
-
+#include "particle_system/ClothSystem.hpp"
 
 class GlobalContext
 {
@@ -41,18 +40,19 @@ private:
 	enum class SimulationMode {
 		eParticle = 0,
 		eSprings = 1,
+		eCloth = 2,
 	};
 	enum class DeltaTimeMode {
 		eDynamic = 0,
 		eStaticMax = 1,
 	};
 
-	SimulationMode m_simulation_mode = SimulationMode::eSprings;
+	SimulationMode m_simulation_mode = SimulationMode::eCloth;
 	DeltaTimeMode m_deltatime_mode = DeltaTimeMode::eStaticMax;
 
 	ShaderProgram m_particle_draw_program;
 	ParticleSystem m_particle_sys;
-
+	ClothSystem m_cloth_sys;
 	SpringSystem m_spring_sys;
 
 	double m_max_fps = 120.0;

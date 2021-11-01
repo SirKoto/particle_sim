@@ -13,6 +13,7 @@ add_executable(${PROJECT_NAME}
 
 	particle_system/ParticleSystem.cpp	particle_system/ParticleSystem.hpp
 	particle_system/SpringSystem.cpp	particle_system/SpringSystem.hpp
+	particle_system/ClothSystem.cpp	particle_system/ClothSystem.hpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE "./")
