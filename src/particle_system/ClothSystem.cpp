@@ -167,6 +167,8 @@ void ClothSystem::imgui_draw()
 
 	ImGui::Separator();
 
+	ImGui::InputInt2("Resolution", (int*)glm::value_ptr(m_resolution_cloth));
+
 	if (ImGui::Button("Reset")) {
 		initialize_system();
 	}
