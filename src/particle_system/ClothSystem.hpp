@@ -32,7 +32,7 @@ private:
 	bool m_flipflop_state = false;
 	uint32_t m_vbo_particle_buffers[2];
 	uint32_t m_spring_indices_bo;
-	// uint32_t m_patches_indices_bo;
+	uint32_t m_patches_indices_bo;
 	uint32_t m_forces_buffer;
 	uint32_t m_original_lengths_buffer;
 	uint32_t m_fixed_points_buffer;
@@ -42,10 +42,14 @@ private:
 	ShaderProgram m_basic_draw_point;
 	ShaderProgram m_advect_particle_program;
 	ShaderProgram m_spring_force_program;
+	ShaderProgram m_tessellation_program;
 
 	uint32_t m_sphere_ssb;
 
 	uint32_t m_segment_vao;
+	uint32_t m_patches_vao;
+
+	uint32_t m_num_elements_patches = 0;
 
 	Sphere m_sphere_head = { glm::vec3(2.0f, 5.0f, 5.0f), 1.0f };
 
@@ -54,6 +58,16 @@ private:
 	bool m_draw_points = true;
 	bool m_draw_lines = true;
 	bool m_intersect_sphere = true;
+
+	enum class DrawMode {
+		ePolylines = 0,
+		eTessellation = 1,
+	};
+	DrawMode m_draw_mode = DrawMode::eTessellation;
+
+	float m_specular_alpha = 60.0f;
+	glm::vec3 m_specular = glm::vec3(0.6196f, 0.6686f, 0.149f);
+	glm::vec3 m_diffuse = glm::vec3(0.4176f, 0.0235f, 0.012f);
 
 	void initialize_system();
 	void update_interaction_data();

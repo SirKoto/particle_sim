@@ -27,10 +27,19 @@ ClothSystem::ClothSystem()
 		&Shader(shad_dir / "spring_forces.comp", Shader::Type::Compute), 1
 	);
 
+	std::array<Shader, 4> tess_shaders = {
+		Shader((shad_dir / "cloth_tess.vert"), Shader::Type::Vertex),
+		Shader((shad_dir / "cloth_tess.frag"), Shader::Type::Fragment),
+		Shader((shad_dir / "cloth_tess.tesc"), Shader::Type::TessellationControl),
+		Shader((shad_dir / "cloth_tess.tese"), Shader::Type::TessellationEvaluation)
+	};
+	m_tessellation_program = ShaderProgram(tess_shaders.data(), (uint32_t)tess_shaders.size());
+
+
 	glGenBuffers(2, m_vbo_particle_buffers);
 	glGenBuffers(1, &m_system_config_bo);
 	glGenBuffers(1, &m_spring_indices_bo);
-	//glGenBuffers(1, &m_patches_indices_bo);
+	glGenBuffers(1, &m_patches_indices_bo);
 	glGenBuffers(1, &m_sphere_ssb);
 	glGenBuffers(1, &m_forces_buffer);
 	glGenBuffers(1, &m_original_lengths_buffer);
@@ -39,9 +48,13 @@ ClothSystem::ClothSystem()
 	glGenBuffers(1, &m_segments_list_buffer);
 
 	glGenVertexArrays(1, &m_segment_vao);
+	glGenVertexArrays(1, &m_patches_vao);
+
 	// Bind indices
 	glBindVertexArray(m_segment_vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spring_indices_bo);
+	glBindVertexArray(m_patches_vao);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_patches_indices_bo);
 	glBindVertexArray(0);
 
 
@@ -110,21 +123,48 @@ void ClothSystem::gl_render(const glm::mat4& proj_view, const glm::vec3& eye_wor
 {
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-	if (m_draw_points || m_draw_lines) {
-		m_basic_draw_point.use_program();
+	if (m_draw_mode == DrawMode::ePolylines) {
+		if (m_draw_points || m_draw_lines) {
+			m_basic_draw_point.use_program();
+			glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(proj_view));
+		}
+		if (m_draw_points) {
+			glPointSize(10.0f);
+			glDrawArrays(GL_POINTS, 0, m_system_config.num_particles);
+		}
+		if (m_draw_lines) {
+			glBindVertexArray(m_segment_vao);
+			glDrawElements(GL_LINES,
+				2 * m_system_config.num_segments,
+				GL_UNSIGNED_INT, nullptr);
+		}
+	}
+	else if (m_draw_mode == DrawMode::eTessellation) {
+		m_tessellation_program.use_program();
 		glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(proj_view));
-	}
-	if (m_draw_points) {
-		glPointSize(10.0f);
-		glDrawArrays(GL_POINTS, 0, m_system_config.num_particles);
-	}
-	if (m_draw_lines) {
-		glBindVertexArray(m_segment_vao);
-		glDrawElements(GL_LINES,
-			2 * m_system_config.num_segments,
-			GL_UNSIGNED_INT, nullptr);
-	}
+		glUniform3fv(2, 1, glm::value_ptr(eye_world));
+		glUniform1f(3, m_specular_alpha);
+		glUniform3fv(4, 1, glm::value_ptr(m_specular));
+		glUniform3fv(5, 1, glm::value_ptr(m_diffuse));
 
+		glPatchParameteri(GL_PATCH_VERTICES, 9);
+
+		glBindVertexArray(m_patches_vao);
+		
+		glDisable(GL_CULL_FACE);
+		glDrawElements(GL_PATCHES,
+			m_num_elements_patches,
+			GL_UNSIGNED_INT, nullptr);
+		
+		glEnable(GL_CULL_FACE);
+
+		if (m_draw_points) {
+			m_basic_draw_point.use_program();
+			glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(proj_view));
+			glPointSize(10.0f);
+			glDrawArrays(GL_POINTS, 0, m_system_config.num_particles);
+		}
+	}
 	glBindVertexArray(0);
 }
 
@@ -162,8 +202,27 @@ void ClothSystem::imgui_draw()
 
 	ImGui::Separator();
 
-	ImGui::Checkbox("Draw Points", &m_draw_points);
-	ImGui::Checkbox("Draw Lines", &m_draw_lines);
+	ImGui::Combo("Draw mode", (int*)&m_draw_mode, "Polyline\0Tessellation");
+
+	if (m_draw_mode == DrawMode::ePolylines) {
+		ImGui::PushID("polyline");
+
+		ImGui::Checkbox("Draw Points", &m_draw_points);
+		ImGui::Checkbox("Draw Lines", &m_draw_lines);
+
+		ImGui::PopID();
+	}
+	else if (m_draw_mode == DrawMode::eTessellation) {
+		ImGui::PushID("Tessellation");
+
+		ImGui::ColorEdit3("Diffuse color", glm::value_ptr(m_diffuse));
+		ImGui::ColorEdit3("Specular color", glm::value_ptr(m_specular));
+		ImGui::InputFloat("Alpha specular", &m_specular_alpha, 1.0f);
+
+		ImGui::Checkbox("Draw Points", &m_draw_points);
+
+		ImGui::PopID();
+	}
 
 	ImGui::Separator();
 
@@ -276,21 +335,28 @@ void ClothSystem::initialize_system()
 				indices.data(), GL_STATIC_DRAW);
 
 			// Patch indices
-			/*
-			std::vector<glm::ivec3> patch_indices; patch_indices.reserve(m_system_config.num_particles);
-			patch_indices.push_back({ 0, 0, 1 });
-			for (uint32_t i = 0; i < m_system_config.num_particles - 2; i += 1) {
-				patch_indices.push_back({ i, i + 1, i + 2 });
-			}
-			patch_indices.push_back({ m_system_config.num_particles - 2, m_system_config.num_particles - 1 , m_system_config.num_particles - 1 });
+			std::vector<int32_t> patch_indices; 
+			patch_indices.reserve(m_resolution_cloth.x * m_resolution_cloth.y * 9);
+			for (int32_t j = 0; j < (int32_t)m_resolution_cloth.y; ++j) {
+				for (int32_t i = 0; i < (int32_t)m_resolution_cloth.x; ++i) {
+					// create patch
+					for (int32_t dj = -1; dj < 2; ++dj) {
+						const int32_t new_j = std::clamp(j + dj, 0, (int32_t)m_resolution_cloth.y - 1);
+						for (int32_t di = -1; di < 2; ++di) {
+							const int32_t new_i = std::clamp(i + di, 0, (int32_t)m_resolution_cloth.x - 1);
 
-			m_num_elements_patches = 3 * (uint32_t)patch_indices.size();
+							patch_indices.push_back(new_j * m_resolution_cloth.x + new_i);
+						}
+					}
+				}
+			}
+			m_num_elements_patches = (uint32_t)patch_indices.size();
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_patches_indices_bo);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER,
 				sizeof(patch_indices[0]) * patch_indices.size(),
 				patch_indices.data(), GL_STATIC_DRAW);
-			*/
+			
 
 			// Segment lengths
 			std::vector<float> original_lengths(m_system_config.num_segments);
@@ -366,7 +432,7 @@ void ClothSystem::set_sphere(const glm::vec3& pos, float radius)
 {
 	Sphere s;
 	s.pos = pos;
-	s.radius = radius;
+	s.radius = radius * 1.01f; // make it slightly bigger for tessellation
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_sphere_ssb);
 	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Sphere), &s);

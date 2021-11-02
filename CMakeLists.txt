@@ -27,6 +27,8 @@ set(COPY_DATA
     ${SHADER_PATH}/spring_point.vert   ${SHADER_PATH}/spring_point.frag
     ${SHADER_PATH}/hair.vert    ${SHADER_PATH}/hair.frag
     ${SHADER_PATH}/hair.tesc   ${SHADER_PATH}/hair.tese
+    ${SHADER_PATH}/cloth_tess.vert    ${SHADER_PATH}/cloth_tess.frag
+    ${SHADER_PATH}/cloth_tess.tesc   ${SHADER_PATH}/cloth_tess.tese
 
 
     ${SHADER_PATH}/advect_particles.comp
