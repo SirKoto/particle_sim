@@ -64,7 +64,7 @@ ClothSystem::ClothSystem()
 	m_system_config.k_v = 0.9999f;
 	m_system_config.gravity = 9.8f;
 	m_system_config.simulation_space_size = 10.0f;
-	m_system_config.bounce = 0.5f;
+	m_system_config.bounce = 0.1f;
 	m_system_config.friction = 0.02f;
 	m_system_config.k_e = 2000.f;
 	m_system_config.k_d = 25.0f;
@@ -200,6 +200,10 @@ void ClothSystem::imgui_draw()
 		update_interaction_data();
 	}
 
+	if (ImGui::InputFloat("Sphere internal scale", &m_scale_sphere_interaction, 0.01f)) {
+		update_sphere();
+	}
+
 	ImGui::Separator();
 
 	ImGui::Combo("Draw mode", (int*)&m_draw_mode, "Polyline\0Tessellation");
@@ -227,6 +231,8 @@ void ClothSystem::imgui_draw()
 	ImGui::Separator();
 
 	ImGui::InputInt2("Resolution", (int*)glm::value_ptr(m_resolution_cloth));
+	ImGui::InputFloat2("Cloth size", glm::value_ptr(m_cloth_size));
+	ImGui::InputScalar("Num Fixed particles", ImGuiDataType_U32, &m_num_fixed_particles);
 
 	if (ImGui::Button("Reset")) {
 		initialize_system();
@@ -250,19 +256,15 @@ void ClothSystem::initialize_system()
 		}
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-		glm::vec2 cloth_size = glm::vec2(3.0f);
-		glm::vec3 rope_init_dir = glm::vec3(1.0f, 0.0f, 0.0f);
-
 		{
 			const uint32_t num_particles = m_system_config.num_particles = m_resolution_cloth.x * m_resolution_cloth.y;
-			// TODO: m_system_config.num_segments = num_particles - 1;
-			m_system_config.num_fixed_particles = m_resolution_cloth.x;
+			m_system_config.num_fixed_particles = m_num_fixed_particles;
 			m_system_config.num_particles_per_strand = 0; //todo: delete
 
 			std::vector<Particle> p; p.reserve(num_particles);
 			// const glm::vec3 dir = glm::normalize(rope_init_dir);
-			float delta_x = cloth_size.x / (float)m_resolution_cloth.x;
-			float delta_y = cloth_size.y / (float)m_resolution_cloth.y;
+			float delta_x = m_cloth_size.x / (float)m_resolution_cloth.x;
+			float delta_y = m_cloth_size.y / (float)m_resolution_cloth.y;
 			for (uint32_t j = 0; j < m_resolution_cloth.y; ++j) {
 				for (uint32_t i = 0; i < m_resolution_cloth.x; ++i) {
 					p.push_back({});
@@ -428,15 +430,23 @@ void ClothSystem::update_system_config()
 	);
 }
 
-void ClothSystem::set_sphere(const glm::vec3& pos, float radius)
+void ClothSystem::update_sphere()
 {
 	Sphere s;
-	s.pos = pos;
-	s.radius = radius * 1.01f; // make it slightly bigger for tessellation
+	s.pos = m_sphere_scene.pos;
+	s.radius = m_sphere_scene.radius * m_scale_sphere_interaction; // make it slightly bigger for tessellation
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_sphere_ssb);
 	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Sphere), &s);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+void ClothSystem::set_sphere(const glm::vec3& pos, float radius)
+{
+	m_sphere_scene.pos = pos;
+	m_sphere_scene.radius = radius;
+	
+	update_sphere();
 }
 
 void ClothSystem::reset_bindings() const

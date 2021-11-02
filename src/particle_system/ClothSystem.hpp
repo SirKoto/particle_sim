@@ -51,9 +51,14 @@ private:
 
 	uint32_t m_num_elements_patches = 0;
 
-	Sphere m_sphere_head = { glm::vec3(2.0f, 5.0f, 5.0f), 1.0f };
+	Sphere m_sphere_head = { glm::vec3(3.5f, 5.0f, 3.8f), 1.0f };
+	Sphere m_sphere_scene;
+	float m_scale_sphere_interaction = 1.01f;
 
 	glm::uvec2 m_resolution_cloth = glm::uvec2(10, 10);
+	uint32_t m_num_fixed_particles = 10;
+	glm::vec2 m_cloth_size = glm::vec2(3.0f);
+
 
 	bool m_draw_points = true;
 	bool m_draw_lines = true;
@@ -72,4 +77,5 @@ private:
 	void initialize_system();
 	void update_interaction_data();
 	void update_system_config();
+	void update_sphere();
 };
