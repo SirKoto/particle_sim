@@ -60,6 +60,7 @@ private:
 	glm::vec2 m_cloth_size = glm::vec2(3.0f);
 
 
+	bool m_use_provots = true;
 	bool m_draw_points = true;
 	bool m_draw_lines = true;
 	bool m_intersect_sphere = true;

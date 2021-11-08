@@ -67,7 +67,7 @@ ClothSystem::ClothSystem()
 	m_system_config.bounce = 0.1f;
 	m_system_config.friction = 0.02f;
 	m_system_config.k_e = 2000.f;
-	m_system_config.k_d = 25.0f;
+	m_system_config.k_d = 10.0f;
 	m_system_config.particle_mass = 1.0f;
 	m_system_config.num_fixed_particles = 1;
 	m_system_config.num_particles_per_strand = 0;
@@ -234,6 +234,8 @@ void ClothSystem::imgui_draw()
 	ImGui::InputFloat2("Cloth size", glm::value_ptr(m_cloth_size));
 	ImGui::InputScalar("Num Fixed particles", ImGuiDataType_U32, &m_num_fixed_particles);
 
+	ImGui::Checkbox("Provot's Spring Model", &m_use_provots);
+
 	if (ImGui::Button("Reset")) {
 		initialize_system();
 	}
@@ -313,6 +315,58 @@ void ClothSystem::initialize_system()
 
 						total_mappings += 2;
 
+					}
+
+					// Provot's
+					if (m_use_provots) {
+
+						// Bend
+						if (i < m_resolution_cloth.x - 2) {
+							uint32_t right2 = j * m_resolution_cloth.x + i + 2;
+
+							uint32_t idx = (uint32_t)indices.size();
+							indices.push_back(glm::ivec2(base, right2));
+							mappings_buffer[base].push_back({ idx, 0 });
+							mappings_buffer[right2].push_back({ idx, 1 });
+
+							total_mappings += 2;
+						}
+						if (j < m_resolution_cloth.y - 2) {
+							uint32_t up2 = (j + 2) * m_resolution_cloth.x + i;
+
+							uint32_t idx = (uint32_t)indices.size();
+							indices.push_back(glm::ivec2(base, up2));
+
+							mappings_buffer[base].push_back({ idx, 0 });
+							mappings_buffer[up2].push_back({ idx, 1 });
+
+							total_mappings += 2;
+						}
+
+						// Shear
+						if (j != m_resolution_cloth.y - 1 && i != m_resolution_cloth.x - 1) {
+							uint32_t up_right = (j + 1) * m_resolution_cloth.x + i + 1;
+
+							uint32_t idx = (uint32_t)indices.size();
+							indices.push_back(glm::ivec2(base, up_right));
+
+							mappings_buffer[base].push_back({ idx, 0 });
+							mappings_buffer[up_right].push_back({ idx, 1 });
+
+							total_mappings += 2;
+						}
+
+						if (j > 0 && i != m_resolution_cloth.x - 1) {
+							uint32_t down_right = (j - 1) * m_resolution_cloth.x + i + 1;
+
+							uint32_t idx = (uint32_t)indices.size();
+							indices.push_back(glm::ivec2(base, down_right));
+
+							mappings_buffer[base].push_back({ idx, 0 });
+							mappings_buffer[down_right].push_back({ idx, 1 });
+
+							total_mappings += 2;
+						}
 					}
 				}
 			}
