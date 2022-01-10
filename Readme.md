@@ -1,4 +1,13 @@
 # Particle simulator
+See https://sirkoto.github.io/project/springsimulator/ for more information on the project.
+
+# Examples
+
+https://user-images.githubusercontent.com/33873395/148814137-7c9db10f-4ba3-4419-bc01-8ef50cd7b006.mp4
+
+
+https://user-images.githubusercontent.com/33873395/148814568-262c3ced-c716-4352-978f-40737d400f38.mp4
+
 
 ## Installation
 Clone with submodules
